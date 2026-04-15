@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus Study — Il tuo agente di studio AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg2: #111118;
+  --bg3: #16161f;
+  --bg4: #1e1e2a;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0f0f8;
+  --text2: #9090a8;
+  --text3: #5a5a70;
+  --accent: #7c6af7;
+  --accent2: #5b4fe0;
+  --accent-glow: rgba(124,106,247,0.25);
+  --green: #34d88c;
+  --green-bg: rgba(52,216,140,0.1);
+  --red: #ff5f6d;
+  --red-bg: rgba(255,95,109,0.1);
+  --amber: #ffb347;
+  --amber-bg: rgba(255,179,71,0.1);
+  --blue: #4fc3f7;
+  --blue-bg: rgba(79,195,247,0.1);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 15px; line-height: 1.6; min-height: 100vh; overflow-x: hidden; }
+body::before { content:''; position:fixed; top:-200px; left:-200px; width:600px; height:600px; background: radial-gradient(circle, rgba(124,106,247,0.08) 0%, transparent 70%); pointer-events:none; z-index:0; }
+body::after { content:''; position:fixed; bottom:-200px; right:-200px; width:500px; height:500px; background: radial-gradient(circle, rgba(79,195,247,0.05) 0%, transparent 70%); pointer-events:none; z-index:0; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+/* LAYOUT */
+#root { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+#sidebar { width: 240px; min-height: 100vh; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 100; transition: transform 0.3s; }
+#main { margin-left: 240px; flex: 1; min-height: 100vh; }
+#content { padding: 2rem; max-width: 1100px; }
+
+/* SIDEBAR */
+.sidebar-logo { padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
+.logo-mark { display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 34px; height: 34px; background: var(--accent); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.logo-text { font-family: var(--font-head); font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+.logo-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.sidebar-section { padding: 1rem 0.75rem 0.25rem; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 1rem; margin: 1px 0.5rem; border-radius: var(--radius-sm); cursor: pointer; color: var(--text2); font-size: 14px; font-weight: 400; transition: all 0.15s; text-decoration: none; border: none; background: none; width: calc(100% - 1rem); text-align: left; font-family: var(--font-body); }
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: var(--accent-glow); color: var(--accent); font-weight: 500; }
+.nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-item .nav-badge { margin-left: auto; background: var(--accent); color: white; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+.sidebar-user { margin-top: auto; padding: 1rem; border-top: 1px solid var(--border); }
+.user-card { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--radius-sm); cursor: pointer; }
+.user-card:hover { background: var(--bg3); }
+.user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
+.user-name { font-size: 13px; font-weight: 500; }
+.user-role { font-size: 11px; color: var(--text3); }
+
+/* TOPBAR */
+#topbar { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 2rem; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); }
+.topbar-title { font-family: var(--font-head); font-size: 20px; font-weight: 700; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.streak-badge { display: flex; align-items: center; gap: 6px; background: var(--amber-bg); border: 1px solid rgba(255,179,71,0.2); color: var(--amber); padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+.btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; border: none; font-family: var(--font-body); }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 20px var(--accent-glow); }
+.btn-ghost { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--bg4); color: var(--text); }
+.btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(255,95,109,0.2); }
+.btn-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,216,140,0.2); }
+
+/* CARDS */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+.card-hover { transition: border-color 0.2s, transform 0.2s; cursor: pointer; }
+.card-hover:hover { border-color: var(--border2); transform: translateY(-2px); }
+
+/* STAT CARDS */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+.stat-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.stat-val { font-family: var(--font-head); font-size: 28px; font-weight: 700; }
+.stat-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.stat-icon { font-size: 20px; margin-bottom: 8px; }
+
+/* GRID */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+
+/* SECTION PICKER */
+.section-pill { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); cursor: pointer; transition: all 0.15s; }
+.section-pill:hover, .section-pill.active { background: var(--accent-glow); border-color: rgba(124,106,247,0.4); color: var(--accent); }
+.sections-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+
+/* QUIZ */
+.option-btn { display: block; width: 100%; text-align: left; padding: 13px 16px; margin-bottom: 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg3); color: var(--text); font-size: 14px; cursor: pointer; font-family: var(--font-body); transition: all 0.15s; line-height: 1.5; }
+.option-btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-glow); color: var(--accent); }
+.option-btn.correct { background: var(--green-bg); border-color: rgba(52,216,140,0.4); color: var(--green); }
+.option-btn.wrong { background: var(--red-bg); border-color: rgba(255,95,109,0.4); color: var(--red); }
+.option-btn.reveal { background: var(--green-bg); border-color: rgba(52,216,140,0.4); color: var(--green); }
+.option-btn:disabled { cursor: default; }
+
+/* PROGRESS BAR */
+.progress-wrap { background: var(--bg4); border-radius: 3px; height: 4px; overflow: hidden; margin-bottom: 1.5rem; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--blue)); border-radius: 3px; transition: width 0.4s ease; }
+
+/* FEEDBACK BOX */
+.feedback-box { border-radius: var(--radius-sm); padding: 14px 16px; font-size: 13px; line-height: 1.7; margin-top: 1rem; display: none; }
+.feedback-correct { background: var(--green-bg); border: 1px solid rgba(52,216,140,0.2); color: #a8f0cc; }
+.feedback-wrong { background: var(--red-bg); border: 1px solid rgba(255,95,109,0.2); color: #ffb3b8; }
+
+/* CHAT */
+.chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 200px); min-height: 400px; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 1rem 0; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 82%; padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.7; }
+.msg-user { background: var(--accent); color: white; border-bottom-right-radius: 4px; align-self: flex-end; }
+.msg-ai { background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; align-self: flex-start; }
+.msg-ai strong { color: var(--accent); }
+.chat-input-wrap { display: flex; gap: 8px; padding-top: 1rem; border-top: 1px solid var(--border); }
+.chat-input { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 14px; color: var(--text); font-size: 14px; font-family: var(--font-body); outline: none; transition: border-color 0.15s; resize: none; }
+.chat-input:focus { border-color: var(--accent); }
+.quick-chips { display: flex; gap: 6px; flex-wrap: wrap; padding-bottom: 0.75rem; }
+.chip { padding: 5px 11px; border-radius: 15px; background: var(--bg4); border: 1px solid var(--border); color: var(--text2); font-size: 12px; cursor: pointer; font-family: var(--font-body); transition: all 0.15s; }
+.chip:hover { background: var(--accent-glow); border-color: rgba(124,106,247,0.4); color: var(--accent); }
+
+/* FLASHCARDS */
+.flashcard-scene { perspective: 1000px; width: 100%; max-width: 500px; height: 260px; margin: 0 auto 1.5rem; cursor: pointer; }
+.flashcard { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); }
+.flashcard.flipped { transform: rotateY(180deg); }
+.flashcard-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; }
+.flashcard-front { background: var(--bg2); border: 1px solid var(--border); }
+.flashcard-back { background: linear-gradient(135deg, var(--accent-glow), var(--bg2)); border: 1px solid rgba(124,106,247,0.3); transform: rotateY(180deg); }
+.flashcard-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 12px; }
+.flashcard-text { font-size: 16px; font-weight: 500; line-height: 1.5; }
+.flashcard-hint { font-size: 12px; color: var(--text3); margin-top: 12px; }
+.srs-btns { display: flex; gap: 8px; justify-content: center; }
+.srs-btn { padding: 8px 20px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: var(--font-body); transition: all 0.15s; }
+.srs-easy { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,216,140,0.2); }
+.srs-hard { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(255,179,71,0.2); }
+.srs-again { background: var(--red-bg); color: var(--red); border: 1px solid rgba(255,95,109,0.2); }
+.srs-btn:hover { transform: translateY(-1px); }
+
+/* TIMER */
+.sim-timer { font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--red); }
+.sim-timer.ok { color: var(--green); }
+.sim-timer.warn { color: var(--amber); }
+
+/* PLAN */
+.plan-day { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem; }
+.plan-day-header { padding: 1rem 1.25rem; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.plan-day-body { padding: 1rem 1.25rem; display: none; }
+.plan-day.open .plan-day-body { display: block; }
+.plan-task { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.plan-task:last-child { border-bottom: none; }
+.plan-task-check { width: 18px; height: 18px; border-radius: 5px; border: 1px solid var(--border2); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; transition: all 0.15s; }
+.plan-task-check.done { background: var(--green); border-color: var(--green); color: white; }
+
+/* PDF UPLOAD */
+.drop-zone { border: 2px dashed var(--border2); border-radius: var(--radius); padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s; }
+.drop-zone:hover, .drop-zone.dragging { border-color: var(--accent); background: var(--accent-glow); }
+.drop-zone .drop-icon { font-size: 36px; margin-bottom: 12px; }
+
+/* BADGE / TAG */
+.tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.tag-accent { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(124,106,247,0.2); }
+.tag-green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,216,140,0.15); }
+.tag-red { background: var(--red-bg); color: var(--red); border: 1px solid rgba(255,95,109,0.15); }
+.tag-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(255,179,71,0.15); }
+.tag-blue { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(79,195,247,0.15); }
+
+/* HEADING */
+h1 { font-family: var(--font-head); font-size: 24px; font-weight: 700; }
+h2 { font-family: var(--font-head); font-size: 18px; font-weight: 600; }
+h3 { font-family: var(--font-head); font-size: 15px; font-weight: 600; }
+.text-muted { color: var(--text2); }
+.text-sm { font-size: 13px; }
+.text-xs { font-size: 11px; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+.mt-4 { margin-top: 1rem; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+
+/* SPINNER */
+.spinner { width: 22px; height: 22px; border: 2px solid var(--bg4); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* LOADING STATE */
+.loading-row { display: flex; align-items: center; gap: 10px; color: var(--text2); font-size: 14px; padding: 1.5rem 0; }
+
+/* SECTIONS COLORS */
+.sec-comprensione { color: #4fc3f7; }
+.sec-verbale { color: #34d88c; }
+.sec-numerico { color: #ffb347; }
+.sec-matematica { color: #ff5f6d; }
+.sec-biologia { color: #b794f4; }
+.bar-comprensione { background: #4fc3f7; }
+.bar-verbale { background: #34d88c; }
+.bar-numerico { background: #ffb347; }
+.bar-matematica { background: #ff5f6d; }
+.bar-biologia { background: #b794f4; }
+
+/* SETUP SCREEN */
+#setup-screen { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.setup-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 2.5rem; max-width: 460px; width: 100%; }
+.setup-step { display: none; }
+.setup-step.active { display: block; }
+.setup-input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 14px; color: var(--text); font-size: 15px; font-family: var(--font-body); outline: none; margin-bottom: 1rem; transition: border-color 0.15s; }
+.setup-input:focus { border-color: var(--accent); }
+.test-option { padding: 13px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; margin-bottom: 8px; transition: all 0.15s; }
+.test-option:hover { border-color: var(--accent); background: var(--accent-glow); }
+.test-option.selected { border-color: var(--accent); background: var(--accent-glow); }
+.test-option-name { font-weight: 500; font-size: 14px; }
+.test-option-desc { font-size: 12px; color: var(--text2); margin-top: 3px; }
+
+/* RESULTS SCREEN */
+.result-score-big { font-family: var(--font-head); font-size: 64px; font-weight: 800; text-align: center; }
+.section-result-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.section-result-bar-wrap { flex: 1; background: var(--bg4); border-radius: 3px; height: 6px; overflow: hidden; }
+.section-result-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+
+/* TOAST */
+#toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast-item { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; display: flex; align-items: center; gap: 8px; animation: toastIn 0.3s ease; max-width: 300px; }
+@keyframes toastIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+
+/* HEATMAP */
+.heatmap-grid { display: grid; grid-template-columns: repeat(26, 1fr); gap: 3px; }
+.heatmap-cell { aspect-ratio: 1; border-radius: 2px; background: var(--bg4); cursor: default; transition: transform 0.1s; }
+.heatmap-cell:hover { transform: scale(1.3); }
+.heatmap-cell.l1 { background: rgba(124,106,247,0.2); }
+.heatmap-cell.l2 { background: rgba(124,106,247,0.45); }
+.heatmap-cell.l3 { background: rgba(124,106,247,0.7); }
+.heatmap-cell.l4 { background: var(--accent); }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  #sidebar { transform: translateX(-100%); }
+  #sidebar.open { transform: translateX(0); }
+  #main { margin-left: 0; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* HIDDEN */
+.hidden { display: none !important; }
+.page { display: none; }
+.page.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div style="text-align:center; margin-bottom:1.75rem;">
+      <div style="font-size:36px; margin-bottom:10px;">🧠</div>
+      <h1 style="font-size:22px; margin-bottom:6px;">Benvenuto su Nexus Study</h1>
+      <p class="text-muted text-sm">Il tuo agente AI per superare i test di ammissione</p>
+    </div>
+
+    <div class="setup-step active" id="step-1">
+      <h3 class="mb-4">Come ti chiami?</h3>
+      <input class="setup-input" id="setup-name" type="text" placeholder="Il tuo nome..." maxlength="30">
+      <h3 class="mb-4">Qual è il tuo obiettivo?</h3>
+      <input class="setup-input" id="setup-goal" type="number" placeholder="Punteggio obiettivo (es. 30)" min="10" max="50">
+      <h3 class="mb-4">La tua API key Anthropic</h3>
+      <input class="setup-input" id="setup-key" type="password" placeholder="sk-ant-...">
+      <p class="text-xs text-muted mb-4">La key viene salvata solo nel tuo browser. <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent);">Ottienila qui →</a></p>
+      <button class="btn btn-primary" style="width:100%;" onclick="nextStep()">Continua →</button>
+    </div>
+
+    <div class="setup-step" id="step-2">
+      <h3 class="mb-4">Quale test devi superare?</h3>
+      <div id="test-options">
+        <div class="test-option selected" data-test="tolc-psi">
+          <div class="test-option-name">TOLC-PSI — Psicologia</div>
+          <div class="test-option-desc">Comprensione testo, Verbale, Numerico, Matematica, Biologia</div>
+        </div>
+        <div class="test-option" data-test="tolc-s">
+          <div class="test-option-name">TOLC-S — Scienze</div>
+          <div class="test-option-desc">Matematica, Ragionamento, Scienze, Inglese</div>
+        </div>
+        <div class="test-option" data-test="medicina">
+          <div class="test-option-name">Test Medicina</div>
+          <div class="test-option-desc">Logica, Biologia, Chimica, Fisica, Matematica</div>
+        </div>
+        <div class="test-option" data-test="tolc-e">
+          <div class="test-option-name">TOLC-E — Economia</div>
+          <div class="test-option-desc">Matematica, Ragionamento logico, Comprensione testo</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:1.25rem;">
+        <button class="btn btn-ghost" onclick="prevStep()">← Indietro</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="finishSetup()">Inizia a studiare 🚀</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+<div id="root">
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">🧠</div>
+      <div>
+        <div class="logo-text">Nexus Study</div>
+        <div class="logo-sub">AI Study Agent</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">Studio</div>
+  <button class="nav-item active" data-page="dashboard" onclick="navigate(this)">
+    <span class="nav-icon">⚡</span> Dashboard
+  </button>
+  <button class="nav-item" data-page="quiz" onclick="navigate(this)">
+    <span class="nav-icon">🎯</span> Allenamento
+  </button>
+  <button class="nav-item" data-page="simulation" onclick="navigate(this)">
+    <span class="nav-icon">⏱️</span> Simulazione
+  </button>
+  <button class="nav-item" data-page="flashcards" onclick="navigate(this)">
+    <span class="nav-icon">🃏</span> Flashcard
+    <span class="nav-badge" id="fc-due-badge" style="display:none;">0</span>
+  </button>
+
+  <div class="sidebar-section">AI</div>
+  <button class="nav-item" data-page="tutor" onclick="navigate(this)">
+    <span class="nav-icon">💬</span> Tutor AI
+  </button>
+  <button class="nav-item" data-page="plan" onclick="navigate(this)">
+    <span class="nav-icon">📅</span> Piano di Studio
+  </button>
+  <button class="nav-item" data-page="upload" onclick="navigate(this)">
+    <span class="nav-icon">📄</span> Studia dai PDF
+  </button>
+
+  <div class="sidebar-section">Dati</div>
+  <button class="nav-item" data-page="stats" onclick="navigate(this)">
+    <span class="nav-icon">📊</span> Statistiche
+  </button>
+
+  <div class="sidebar-user">
+    <div class="user-card">
+      <div class="user-avatar" id="user-avatar-sb">M</div>
+      <div>
+        <div class="user-name" id="user-name-sb">Mirtilla</div>
+        <div class="user-role" id="user-test-sb">TOLC-PSI</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <div class="topbar-title" id="topbar-title">Dashboard</div>
+    <div class="topbar-right">
+      <div class="streak-badge" id="streak-display">🔥 <span id="streak-num">0</span> giorni</div>
+      <button class="btn btn-ghost" onclick="navigate(document.querySelector('[data-page=simulation]'))">Simula esame</button>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="mb-8">
+        <h1 id="dash-greeting" class="mb-4" style="font-size:28px;">Bentornata! 👋</h1>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-label">Punteggio simulato</div>
+            <div class="stat-val" id="dash-score">0.0</div>
+            <div class="stat-sub">su 50 punti · obiettivo <span id="dash-goal">30</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-label">Domande fatte</div>
+            <div class="stat-val" id="dash-total">0</div>
+            <div class="stat-sub"><span id="dash-accuracy">0%</span> di accuratezza</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🔥</div>
+            <div class="stat-label">Streak</div>
+            <div class="stat-val" id="dash-streak">0</div>
+            <div class="stat-sub">giorni consecutivi</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🃏</div>
+            <div class="stat-label">Flashcard da rivedere</div>
+            <div class="stat-val" id="dash-fc-due">0</div>
+            <div class="stat-sub">oggi</div>
+          </div>
+        </div>
+
+        <div class="grid-2 mb-6">
+          <div class="card">
+            <div class="flex items-center justify-between mb-4">
+              <h3>Progressi per sezione</h3>
+              <span class="tag tag-accent">ultimi 30 gg</span>
+            </div>
+            <div id="section-bars"></div>
+          </div>
+          <div class="card">
+            <h3 class="mb-4">Attività — ultime 6 settimane</h3>
+            <div class="heatmap-grid" id="heatmap"></div>
+            <div style="display:flex;gap:6px;align-items:center;margin-top:8px;">
+              <span class="text-xs text-muted">Meno</span>
+              <div style="width:10px;height:10px;border-radius:2px;background:var(--bg4);"></div>
+              <div style="width:10px;height:10px;border-radius:2px;background:rgba(124,106,247,0.3);"></div>
+              <div style="width:10px;height:10px;border-radius:2px;background:rgba(124,106,247,0.6);"></div>
+              <div style="width:10px;height:10px;border-radius:2px;background:var(--accent);"></div>
+              <span class="text-xs text-muted">Più</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3>Inizia subito</h3>
+          </div>
+          <div class="grid-3">
+            <div class="card card-hover" style="background:var(--bg3);" onclick="navigate(document.querySelector('[data-page=quiz]'))">
+              <div style="font-size:24px;margin-bottom:8px;">🎯</div>
+              <h3 style="font-size:14px;">Allenamento rapido</h3>
+              <p class="text-sm text-muted mt-4">10 domande AI · con spiegazioni</p>
+            </div>
+            <div class="card card-hover" style="background:var(--bg3);" onclick="navigate(document.querySelector('[data-page=flashcards]'))">
+              <div style="font-size:24px;margin-bottom:8px;">🃏</div>
+              <h3 style="font-size:14px;">Ripassa flashcard</h3>
+              <p class="text-sm text-muted mt-4" id="fc-due-dash">0 da rivedere oggi</p>
+            </div>
+            <div class="card card-hover" style="background:var(--bg3);" onclick="navigate(document.querySelector('[data-page=tutor]'))">
+              <div style="font-size:24px;margin-bottom:8px;">💬</div>
+              <h3 style="font-size:14px;">Chiedi al tutor</h3>
+              <p class="text-sm text-muted mt-4">Qualsiasi dubbio · sempre disponibile</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===== QUIZ ===== -->
+    <div class="page" id="page-quiz">
+      <div id="quiz-setup">
+        <h1 class="mb-4">Allenamento</h1>
+        <p class="text-muted mb-6">Scegli una sezione e allenati con domande generate dall'AI. Dopo ogni risposta ricevi una spiegazione dettagliata.</p>
+        <div class="sections-row" id="quiz-section-pills"></div>
+        <div class="grid-2 mb-6">
+          <div class="card">
+            <h3 class="mb-4">Numero di domande</h3>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost q-count active" data-n="5">5</button>
+              <button class="btn btn-ghost q-count" data-n="10">10</button>
+              <button class="btn btn-ghost q-count" data-n="20">20</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3 class="mb-4">Difficoltà</h3>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost q-diff active" data-d="misto">Misto</button>
+              <button class="btn btn-ghost q-diff" data-d="facile">Facile</button>
+              <button class="btn btn-ghost q-diff" data-d="difficile">Difficile</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="startQuiz()">Inizia allenamento →</button>
+      </div>
+
+      <div id="quiz-running" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <span id="quiz-sec-tag" class="tag tag-accent"></span>
+            <span class="text-sm text-muted" id="quiz-qnum-txt"></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm">Score: <strong id="quiz-live-score" style="color:var(--green);">0.00</strong></span>
+            <button class="btn btn-ghost" style="font-size:12px;" onclick="endQuizEarly()">Termina</button>
+          </div>
+        </div>
+        <div class="progress-wrap"><div class="progress-fill" id="quiz-bar"></div></div>
+        <div class="card mb-4">
+          <p class="text-xs text-muted mb-4" id="quiz-context" style="display:none;line-height:1.8;font-style:italic;border-left:2px solid var(--accent);padding-left:12px;"></p>
+          <h2 id="quiz-q" style="font-size:16px;line-height:1.6;margin-bottom:1.25rem;">Carico domanda...</h2>
+          <div id="quiz-opts"></div>
+          <div id="quiz-feedback" class="feedback-box"></div>
+          <div id="quiz-loading" class="loading-row hidden"><div class="spinner"></div><span>L'AI sta generando la domanda...</span></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div></div>
+          <button class="btn btn-primary hidden" id="btn-quiz-next" onclick="quizNext()">Prossima →</button>
+        </div>
+      </div>
+
+      <div id="quiz-results" class="hidden">
+        <div class="card" style="text-align:center; padding:2.5rem;">
+          <div style="font-size:40px;margin-bottom:12px;" id="quiz-res-emoji">🎉</div>
+          <h1 class="mb-4" id="quiz-res-title">Allenamento completato!</h1>
+          <div class="result-score-big" id="quiz-res-score" style="margin-bottom:4px;">0.0</div>
+          <p class="text-muted mb-6">/ <span id="quiz-res-max">10</span> punti</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;max-width:360px;margin:0 auto 1.5rem;">
+            <div class="stat-card"><div class="stat-val" id="qr-corr" style="color:var(--green);">0</div><div class="stat-label">Corrette</div></div>
+            <div class="stat-card"><div class="stat-val" id="qr-wrong" style="color:var(--red);">0</div><div class="stat-label">Errate</div></div>
+            <div class="stat-card"><div class="stat-val" id="qr-acc">0%</div><div class="stat-label">Accuratezza</div></div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <button class="btn btn-primary" onclick="restartQuiz()">Rigioca</button>
+            <button class="btn btn-ghost" onclick="navigate(document.querySelector('[data-page=quiz]'))">Cambia sezione</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SIMULATION ===== -->
+    <div class="page" id="page-simulation">
+      <div id="sim-setup">
+        <h1 class="mb-4">Simulazione Esame</h1>
+        <p class="text-muted mb-6">Riproduce esattamente il vero esame: sezioni separate con timer reale.</p>
+        <div class="card mb-6">
+          <h3 class="mb-4">Struttura del test</h3>
+          <div id="sim-structure"></div>
+          <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:1rem;">
+            <p class="text-sm text-muted">Punteggio: <strong style="color:var(--green);">+1</strong> corretta &nbsp;·&nbsp; <strong style="color:var(--text2);">0</strong> non risposta &nbsp;·&nbsp; <strong style="color:var(--red);">−0.25</strong> errata</p>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="startSim()">Inizia simulazione →</button>
+      </div>
+
+      <div id="sim-running" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <span id="sim-sec-tag" class="tag tag-amber"></span>
+            <span class="text-sm text-muted" id="sim-qnum-txt"></span>
+          </div>
+          <div class="sim-timer ok" id="sim-timer-display">20:00</div>
+        </div>
+        <div class="progress-wrap"><div class="progress-fill" id="sim-bar"></div></div>
+        <div class="card mb-4">
+          <p class="text-xs text-muted mb-4" id="sim-context" style="display:none;line-height:1.8;font-style:italic;border-left:2px solid var(--accent);padding-left:12px;"></p>
+          <h2 id="sim-q" style="font-size:16px;line-height:1.6;margin-bottom:1.25rem;">Carico domanda...</h2>
+          <div id="sim-opts"></div>
+          <div id="sim-loading" class="loading-row hidden"><div class="spinner"></div><span>Generando domanda...</span></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <button class="btn btn-ghost" onclick="simSkip()">Salta (0 pt)</button>
+          <button class="btn btn-primary hidden" id="btn-sim-next" onclick="simNext()">Prossima →</button>
+        </div>
+      </div>
+
+      <div id="sim-results" class="hidden">
+        <div style="text-align:center;padding:1.5rem 0 1rem;">
+          <div style="font-size:40px;margin-bottom:12px;" id="sim-res-emoji">🎉</div>
+          <h1 class="mb-4" id="sim-res-title">Simulazione completata!</h1>
+          <div class="result-score-big" id="sim-res-score" style="margin-bottom:4px;">0.0</div>
+          <p class="text-muted mb-6">/ 50 punti · obiettivo <span id="sim-res-goal">30</span></p>
+        </div>
+        <div class="stats-grid mb-6">
+          <div class="stat-card"><div class="stat-val" id="sr-corr" style="color:var(--green);">0</div><div class="stat-label">Corrette</div></div>
+          <div class="stat-card"><div class="stat-val" id="sr-wrong" style="color:var(--red);">0</div><div class="stat-label">Errate</div></div>
+          <div class="stat-card"><div class="stat-val" id="sr-skip">0</div><div class="stat-label">Saltate</div></div>
+          <div class="stat-card"><div class="stat-val" id="sr-acc">0%</div><div class="stat-label">Accuratezza</div></div>
+        </div>
+        <div class="card mb-6">
+          <h3 class="mb-4">Risultati per sezione</h3>
+          <div id="sim-sec-results"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="navigate(document.querySelector('[data-page=simulation]'))">Nuova simulazione</button>
+          <button class="btn btn-ghost" onclick="navigate(document.querySelector('[data-page=dashboard]'))">← Dashboard</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== FLASHCARDS ===== -->
+    <div class="page" id="page-flashcards">
+      <div class="flex items-center justify-between mb-6">
+        <h1>Flashcard</h1>
+        <div class="flex gap-3">
+          <button class="btn btn-ghost" onclick="showCreateFC()">+ Crea</button>
+          <button class="btn btn-primary" onclick="startFCSession()" id="btn-start-fc">Studia ora</button>
+        </div>
+      </div>
+
+      <div id="fc-overview">
+        <div class="grid-3 mb-6">
+          <div class="stat-card"><div class="stat-val" id="fc-total-count">0</div><div class="stat-label">Totale flashcard</div></div>
+          <div class="stat-card"><div class="stat-val" id="fc-due-count" style="color:var(--amber);">0</div><div class="stat-label">Da rivedere oggi</div></div>
+          <div class="stat-card"><div class="stat-val" id="fc-mastered" style="color:var(--green);">0</div><div class="stat-label">Padroneggiante</div></div>
+        </div>
+        <div class="card mb-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3>Le tue flashcard</h3>
+            <button class="btn btn-ghost" style="font-size:12px;" onclick="generateFCWithAI()">✨ Genera con AI</button>
+          </div>
+          <div id="fc-list"></div>
+        </div>
+      </div>
+
+      <div id="fc-session" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-sm text-muted" id="fc-session-progress">Card 1 di 10</div>
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="endFCSession()">Fine sessione</button>
+        </div>
+        <div class="flashcard-scene" onclick="flipCard()">
+          <div class="flashcard" id="flashcard-el">
+            <div class="flashcard-face flashcard-front">
+              <div class="flashcard-label">Domanda</div>
+              <div class="flashcard-text" id="fc-front-text">Carico...</div>
+              <div class="flashcard-hint">Clicca per vedere la risposta</div>
+            </div>
+            <div class="flashcard-face flashcard-back">
+              <div class="flashcard-label">Risposta</div>
+              <div class="flashcard-text" id="fc-back-text">...</div>
+            </div>
+          </div>
+        </div>
+        <div class="srs-btns hidden" id="srs-btns">
+          <button class="srs-btn srs-again" onclick="rateCard(1)">😕 Di nuovo</button>
+          <button class="srs-btn srs-hard" onclick="rateCard(3)">🤔 Difficile</button>
+          <button class="srs-btn srs-easy" onclick="rateCard(5)">😊 Facile</button>
+        </div>
+        <p class="text-xs text-muted" style="text-align:center;margin-top:1rem;">Clicca la card per girare · poi valuta quanto te la ricordavi</p>
+      </div>
+
+      <div id="fc-create" class="hidden">
+        <div class="card" style="max-width:500px;">
+          <h3 class="mb-4">Crea nuova flashcard</h3>
+          <div style="margin-bottom:1rem;">
+            <label class="text-xs text-muted" style="display:block;margin-bottom:6px;">FRONTE (domanda)</label>
+            <textarea class="chat-input" id="fc-new-front" style="height:80px;width:100%;" placeholder="Cos'è la mitosi?"></textarea>
+          </div>
+          <div style="margin-bottom:1.25rem;">
+            <label class="text-xs text-muted" style="display:block;margin-bottom:6px;">RETRO (risposta)</label>
+            <textarea class="chat-input" id="fc-new-back" style="height:80px;width:100%;" placeholder="La mitosi è la divisione cellulare..."></textarea>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="saveNewFC()">Salva</button>
+            <button class="btn btn-ghost" onclick="cancelCreateFC()">Annulla</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TUTOR ===== -->
+    <div class="page" id="page-tutor">
+      <h1 class="mb-4">Tutor AI</h1>
+      <p class="text-muted mb-6">Il tuo tutor personale conosce i tuoi punti deboli e il tuo percorso.</p>
+      <div class="card chat-wrap">
+        <div class="quick-chips" id="quick-chips"></div>
+        <div class="chat-messages" id="chat-msgs"></div>
+        <div class="chat-input-wrap">
+          <textarea class="chat-input" id="chat-in" placeholder="Chiedimi qualsiasi cosa..." rows="1" onkeydown="chatKeydown(event)"></textarea>
+          <button class="btn btn-primary" onclick="sendChat()">Invia</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PIANO DI STUDIO ===== -->
+    <div class="page" id="page-plan">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="mb-4">Piano di Studio</h1>
+          <p class="text-muted">Generato dall'AI in base alle tue lacune reali.</p>
+        </div>
+        <button class="btn btn-primary" onclick="generatePlan()">✨ Genera nuovo piano</button>
+      </div>
+      <div id="plan-content">
+        <div class="card" style="text-align:center;padding:3rem;">
+          <div style="font-size:36px;margin-bottom:12px;">📅</div>
+          <h3 class="mb-4">Nessun piano ancora</h3>
+          <p class="text-muted mb-6">Clicca "Genera nuovo piano" per creare un piano settimanale personalizzato basato sui tuoi dati.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PDF UPLOAD ===== -->
+    <div class="page" id="page-upload">
+      <h1 class="mb-4">Studia dai tuoi PDF</h1>
+      <p class="text-muted mb-6">Carica le tue dispense e l'AI genera domande e flashcard direttamente da esse.</p>
+
+      <div class="drop-zone mb-6" id="drop-zone" onclick="document.getElementById('pdf-input').click()">
+        <input type="file" id="pdf-input" accept=".pdf,.txt" style="display:none;" onchange="handleFileUpload(event)">
+        <div class="drop-icon">📄</div>
+        <h3 class="mb-4">Trascina qui il tuo PDF</h3>
+        <p class="text-muted text-sm">o clicca per selezionare · PDF, TXT · max 10MB</p>
+      </div>
+
+      <div id="uploaded-files-list"></div>
+
+      <div id="pdf-actions" class="hidden">
+        <div class="card">
+          <h3 class="mb-4">Cosa vuoi fare con questo documento?</h3>
+          <div class="grid-3">
+            <button class="card card-hover" style="background:var(--bg3);border:none;cursor:pointer;text-align:left;" onclick="pdfAction('quiz')">
+              <div style="font-size:20px;margin-bottom:8px;">🎯</div>
+              <h3 style="font-size:14px;">Genera domande</h3>
+              <p class="text-sm text-muted mt-4">10 domande stile TOLC</p>
+            </button>
+            <button class="card card-hover" style="background:var(--bg3);border:none;cursor:pointer;text-align:left;" onclick="pdfAction('flashcards')">
+              <div style="font-size:20px;margin-bottom:8px;">🃏</div>
+              <h3 style="font-size:14px;">Crea flashcard</h3>
+              <p class="text-sm text-muted mt-4">Flashcard dai concetti chiave</p>
+            </button>
+            <button class="card card-hover" style="background:var(--bg3);border:none;cursor:pointer;text-align:left;" onclick="pdfAction('summary')">
+              <div style="font-size:20px;margin-bottom:8px;">📝</div>
+              <h3 style="font-size:14px;">Riassumi</h3>
+              <p class="text-sm text-muted mt-4">Schema e punti chiave</p>
+            </button>
+          </div>
+        </div>
+        <div id="pdf-result" class="hidden mt-4"></div>
+      </div>
+    </div>
+
+    <!-- ===== STATS ===== -->
+    <div class="page" id="page-stats">
+      <h1 class="mb-6">Statistiche</h1>
+      <div class="grid-2 mb-6">
+        <div class="card">
+          <h3 class="mb-4">Punteggio per sezione</h3>
+          <canvas id="chart-section" height="200"></canvas>
+        </div>
+        <div class="card">
+          <h3 class="mb-4">Andamento nel tempo</h3>
+          <canvas id="chart-trend" height="200"></canvas>
+        </div>
+      </div>
+      <div class="card mb-6">
+        <h3 class="mb-4">Dettaglio sezioni</h3>
+        <div id="stats-detail"></div>
+      </div>
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h3>Cronologia simulazioni</h3>
+        </div>
+        <div id="sim-history"></div>
+      </div>
+    </div>
+
+  </div><!-- content -->
+</div><!-- main -->
+</div><!-- root -->
+</div><!-- app -->
+
+<div id="toast"></div>
+
+<script>
+// ===== STATE =====
+let APP = {
+  user: { name: '', goal: 30, test: 'tolc-psi', apiKey: '' },
+  stats: {
+    comprensione:{done:0,correct:0,score:0},
+    verbale:{done:0,correct:0,score:0},
+    numerico:{done:0,correct:0,score:0},
+    matematica:{done:0,correct:0,score:0},
+    biologia:{done:0,correct:0,score:0}
+  },
+  streak: 0, totalDone: 0, totalCorrect: 0,
+  lastActive: null,
+  simHistory: [],
+  flashcards: [],
+  heatmap: {},
+  chatHistory: [],
+  studyPlan: null,
+  uploadedText: '',
+  uploadedName: ''
+};
+
+const TESTS = {
+  'tolc-psi': {
+    name: 'TOLC-PSI',
+    sections: [
+      {id:'comprensione',name:'Comprensione testo',icon:'📖',time:20,count:10},
+      {id:'verbale',name:'Ragionamento verbale',icon:'🔤',time:25,count:10},
+      {id:'numerico',name:'Ragionamento numerico',icon:'🔢',time:20,count:10},
+      {id:'matematica',name:'Matematica di base',icon:'📐',time:20,count:10},
+      {id:'biologia',name:'Biologia',icon:'🧬',time:15,count:10}
+    ]
+  },
+  'tolc-s': {
+    name: 'TOLC-S',
+    sections: [
+      {id:'matematica',name:'Matematica',icon:'📐',time:20,count:10},
+      {id:'numerico',name:'Ragionamento',icon:'🔢',time:25,count:10},
+      {id:'biologia',name:'Scienze',icon:'🧬',time:20,count:10},
+      {id:'verbale',name:'Inglese',icon:'🔤',time:15,count:10}
+    ]
+  },
+  'medicina': {
+    name: 'Test Medicina',
+    sections: [
+      {id:'verbale',name:'Logica',icon:'🧠',time:30,count:10},
+      {id:'biologia',name:'Biologia',icon:'🧬',time:20,count:10},
+      {id:'comprensione',name:'Chimica',icon:'⚗️',time:20,count:10},
+      {id:'matematica',name:'Fisica/Matematica',icon:'📐',time:20,count:10}
+    ]
+  },
+  'tolc-e': {
+    name: 'TOLC-E',
+    sections: [
+      {id:'matematica',name:'Matematica',icon:'📐',time:20,count:10},
+      {id:'numerico',name:'Ragionamento logico',icon:'🔢',time:25,count:10},
+      {id:'comprensione',name:'Comprensione testo',icon:'📖',time:20,count:10}
+    ]
+  }
+};
+
+// ===== STORAGE =====
+function save() { try { localStorage.setItem('nexus_app', JSON.stringify(APP)); } catch(e){} }
+function load() {
+  try {
+    const d = localStorage.getItem('nexus_app');
+    if(d) APP = JSON.parse(d);
+  } catch(e){}
+}
+
+// ===== SETUP =====
+let setupStep = 1;
+let selectedTest = 'tolc-psi';
+
+document.querySelectorAll('.test-option').forEach(el => {
+  el.onclick = () => {
+    document.querySelectorAll('.test-option').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedTest = el.dataset.test;
+  };
+});
+
+function nextStep() {
+  const name = document.getElementById('setup-name').value.trim();
+  const goal = parseInt(document.getElementById('setup-goal').value) || 30;
+  const key = document.getElementById('setup-key').value.trim();
+  if(!name) { toast('Inserisci il tuo nome!', 'red'); return; }
+  if(!key || !key.startsWith('sk-')) { toast('Inserisci una API key valida!', 'red'); return; }
+  APP.user.name = name;
+  APP.user.goal = goal;
+  APP.user.apiKey = key;
+  document.getElementById('step-1').classList.remove('active');
+  document.getElementById('step-2').classList.add('active');
+}
+
+function prevStep() {
+  document.getElementById('step-2').classList.remove('active');
+  document.getElementById('step-1').classList.add('active');
+}
+
+function finishSetup() {
+  APP.user.test = selectedTest;
+  APP.user.name = APP.user.name;
+  save();
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').classList.remove('hidden');
+  initApp();
+}
+
+// ===== INIT =====
+function initApp() {
+  updateStreak();
+  renderSidebar();
+  renderDashboard();
+  renderSimStructure();
+  renderSectionPills();
+  renderFCList();
+  renderStats();
+  initChat();
+  renderHeatmap();
+}
+
+function updateStreak() {
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now()-86400000).toDateString();
+  if(APP.lastActive === today) return;
+  if(APP.lastActive === yesterday) APP.streak++;
+  else if(APP.lastActive !== today) APP.streak = APP.lastActive ? 0 : 1;
+  APP.lastActive = today;
+  APP.heatmap[today] = (APP.heatmap[today]||0) + 1;
+  save();
+}
+
+function renderSidebar() {
+  document.getElementById('user-avatar-sb').textContent = APP.user.name.charAt(0).toUpperCase();
+  document.getElementById('user-name-sb').textContent = APP.user.name;
+  document.getElementById('user-test-sb').textContent = TESTS[APP.user.test]?.name || APP.user.test;
+  document.getElementById('streak-num').textContent = APP.streak;
+  const due = getFCDue().length;
+  const badge = document.getElementById('fc-due-badge');
+  if(due > 0) { badge.textContent = due; badge.style.display = ''; }
+  else badge.style.display = 'none';
+}
+
+function renderDashboard() {
+  const totalScore = Object.values(APP.stats).reduce((a,s)=>a+s.score,0);
+  const totalDone = Object.values(APP.stats).reduce((a,s)=>a+s.done,0);
+  const totalCorr = Object.values(APP.stats).reduce((a,s)=>a+s.correct,0);
+  const acc = totalDone>0 ? Math.round(totalCorr/totalDone*100) : 0;
+  const due = getFCDue().length;
+  const h = new Date().getHours();
+  const greet = h<12?'Buongiorno':'h<18?Buon pomeriggio':'Buonasera';
+  document.getElementById('dash-greeting').textContent = (h<12?'Buongiorno':'h<18?Buon pomeriggio':'Buonasera')+', '+APP.user.name+'! 👋';
+  document.getElementById('dash-greeting').textContent = (h<12?'Buongiorno ':h<18?'Buon pomeriggio ':'Buonasera ')+APP.user.name+'! 👋';
+  document.getElementById('dash-score').textContent = Math.max(0,totalScore).toFixed(1);
+  document.getElementById('dash-goal').textContent = APP.user.goal;
+  document.getElementById('dash-total').textContent = totalDone;
+  document.getElementById('dash-accuracy').textContent = acc+'%';
+  document.getElementById('dash-streak').textContent = APP.streak;
+  document.getElementById('dash-fc-due').textContent = due;
+  document.getElementById('fc-due-dash').textContent = due+' da rivedere oggi';
+
+  const secs = TESTS[APP.user.test]?.sections || [];
+  const barsEl = document.getElementById('section-bars');
+  barsEl.innerHTML = secs.map(s => {
+    const st = APP.stats[s.id] || {done:0,correct:0,score:0};
+    const pct = st.done>0 ? Math.max(0,Math.round(st.score/st.done*100)) : 0;
+    return `<div style="margin-bottom:12px;">
+      <div class="flex items-center justify-between text-sm" style="margin-bottom:5px;">
+        <span>${s.icon} ${s.name}</span>
+        <span class="text-muted">${pct}%</span>
+      </div>
+      <div style="background:var(--bg4);border-radius:3px;height:6px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:3px;transition:width 0.6s ease;"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderHeatmap() {
+  const el = document.getElementById('heatmap');
+  const cells = [];
+  for(let i=41;i>=0;i--) {
+    const d = new Date(Date.now()-i*86400000).toDateString();
+    const val = APP.heatmap[d]||0;
+    const cls = val===0?'':val<3?'l1':val<6?'l2':val<10?'l3':'l4';
+    cells.push(`<div class="heatmap-cell ${cls}" title="${d}: ${val} domande"></div>`);
+  }
+  el.innerHTML = cells.join('');
+}
+
+// ===== NAVIGATION =====
+function navigate(btn) {
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const page = btn.dataset.page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const titles = {dashboard:'Dashboard',quiz:'Allenamento',simulation:'Simulazione Esame',flashcards:'Flashcard',tutor:'Tutor AI',plan:'Piano di Studio',upload:'Studia dai PDF',stats:'Statistiche'};
+  document.getElementById('topbar-title').textContent = titles[page]||page;
+  if(page==='dashboard') renderDashboard();
+  if(page==='stats') renderStatsPage();
+  if(page==='flashcards') { renderFCList(); updateFCCounts(); }
+}
+
+// ===== AI CALL =====
+async function callClaude(messages, system, maxTokens=1200) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      system: system,
+      messages: messages
+    })
+  });
+  if(!resp.ok) throw new Error('API error '+resp.status);
+  const data = await resp.json();
+  return data.content.map(b=>b.text||'').join('');
+}
+
+function getTutorSystem() {
+  const secs = TESTS[APP.user.test]?.sections || [];
+  const weakSecs = secs.filter(s=>{const st=APP.stats[s.id];return st&&st.done>0&&(st.correct/st.done)<0.6;}).map(s=>s.name);
+  const totalDone = Object.values(APP.stats).reduce((a,s)=>a+s.done,0);
+  const totalScore = Object.values(APP.stats).reduce((a,s)=>a+s.score,0);
+  return `Sei un tutor esperto e motivante per il ${TESTS[APP.user.test]?.name||'test di ammissione'}. Stai aiutando ${APP.user.name} a superare il test con un punteggio di almeno ${APP.user.goal}/50.
+Dati attuali dello studente: ha fatto ${totalDone} domande, punteggio simulato ${totalScore.toFixed(1)}/50. ${weakSecs.length>0?'Sezioni deboli: '+weakSecs.join(', ')+'.':''} 
+Rispondi SEMPRE in italiano. Sii chiaro, incoraggiante, usa esempi concreti. Formatta le risposte in modo leggibile con **grassetto** per i concetti chiave.`;
+}
+
+function getQuizSystem(section, difficulty) {
+  const secObj = TESTS[APP.user.test]?.sections.find(s=>s.id===section);
+  const secName = secObj?.name || section;
+  return `Sei un generatore di domande per il ${TESTS[APP.user.test]?.name||'TOLC'}. Genera domande di livello ${difficulty} per la sezione: ${secName}.
+Rispondi SOLO con JSON valido, nessun testo prima o dopo, nessun markdown:
+{"question":"testo domanda","context":"(opzionale, solo per comprensione testo: brano da leggere)","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0,"explanation":"spiegazione chiara e didattica del perché la risposta è corretta e le altre sbagliate"}
+Il campo correct è l'indice 0-3 della risposta corretta. Le domande devono essere realistiche, precise e ben calibrate per il test.`;
+}
+
+// ===== QUIZ =====
+let quizState = { section:'', count:5, diff:'misto', current:0, questions:[], score:0, correct:0, wrong:0 };
+
+function renderSectionPills() {
+  const secs = TESTS[APP.user.test]?.sections || [];
+  const el = document.getElementById('quiz-section-pills');
+  el.innerHTML = secs.map((s,i)=>`<div class="section-pill ${i===0?'active':''}" data-sec="${s.id}" onclick="selectQuizSec(this)">${s.icon} ${s.name}</div>`).join('');
+  quizState.section = secs[0]?.id || 'comprensione';
+}
+
+function selectQuizSec(el) {
+  document.querySelectorAll('.section-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  quizState.section = el.dataset.sec;
+}
+
+document.querySelectorAll('.q-count').forEach(btn=>{
+  btn.onclick = ()=>{ document.querySelectorAll('.q-count').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); quizState.count=parseInt(btn.dataset.n); };
+});
+document.querySelectorAll('.q-diff').forEach(btn=>{
+  btn.onclick = ()=>{ document.querySelectorAll('.q-diff').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); quizState.diff=btn.dataset.d; };
+});
+
+async function startQuiz() {
+  quizState.current=0; quizState.questions=[]; quizState.score=0; quizState.correct=0; quizState.wrong=0;
+  document.getElementById('quiz-setup').classList.add('hidden');
+  document.getElementById('quiz-running').classList.remove('hidden');
+  document.getElementById('quiz-results').classList.add('hidden');
+  await loadQuizQ();
+}
+
+async function loadQuizQ() {
+  const qn = quizState.current+1;
+  const total = quizState.count;
+  document.getElementById('quiz-qnum-txt').textContent = `Dom. ${qn} / ${total}`;
+  document.getElementById('quiz-bar').style.width = ((qn-1)/total*100)+'%';
+  document.getElementById('quiz-q').textContent = 'Carico domanda...';
+  document.getElementById('quiz-opts').innerHTML = '';
+  document.getElementById('quiz-feedback').style.display = 'none';
+  document.getElementById('btn-quiz-next').classList.add('hidden');
+  document.getElementById('quiz-context').style.display = 'none';
+  document.getElementById('quiz-loading').classList.remove('hidden');
+
+  const secObj = TESTS[APP.user.test]?.sections.find(s=>s.id===quizState.section);
+  document.getElementById('quiz-sec-tag').textContent = (secObj?.icon||'🎯')+' '+(secObj?.name||quizState.section);
+
+  try {
+    const raw = await callClaude([{role:'user',content:`Genera una domanda di ${quizState.diff} difficoltà per la sezione ${quizState.section}. Domanda numero ${qn} di ${total}.`}], getQuizSystem(quizState.section, quizState.diff));
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const q = JSON.parse(clean);
+    quizState.questions.push(q);
+    document.getElementById('quiz-loading').classList.add('hidden');
+    if(q.context) { document.getElementById('quiz-context').textContent=q.context; document.getElementById('quiz-context').style.display='block'; }
+    document.getElementById('quiz-q').textContent = q.question;
+    const optsEl = document.getElementById('quiz-opts');
+    optsEl.innerHTML = '';
+    q.options.forEach((opt,i)=>{
+      const btn = document.createElement('button');
+      btn.className='option-btn'; btn.textContent=opt;
+      btn.onclick=()=>answerQuiz(i);
+      optsEl.appendChild(btn);
+    });
+  } catch(e) {
+    document.getElementById('quiz-loading').classList.add('hidden');
+    document.getElementById('quiz-q').textContent='Errore nel caricamento. Riprova.';
+    document.getElementById('btn-quiz-next').classList.remove('hidden');
+    toast('Errore AI: '+e.message,'red');
+  }
+}
+
+function answerQuiz(idx) {
+  const q = quizState.questions[quizState.current];
+  const btns = document.querySelectorAll('#quiz-opts .option-btn');
+  btns.forEach(b=>b.disabled=true);
+
+  const correct = idx===q.correct;
+  btns[idx].classList.add(correct?'correct':'wrong');
+  if(!correct) btns[q.correct].classList.add('reveal');
+
+  if(correct) { quizState.score+=1; quizState.correct++; APP.stats[quizState.section].correct++; APP.stats[quizState.section].score+=1; }
+  else { quizState.score-=0.25; quizState.wrong++; APP.stats[quizState.section].score-=0.25; }
+  APP.stats[quizState.section].done++;
+  APP.totalDone++;
+  if(correct) APP.totalCorrect++;
+  APP.heatmap[new Date().toDateString()] = (APP.heatmap[new Date().toDateString()]||0)+1;
+  save();
+
+  document.getElementById('quiz-live-score').textContent = quizState.score.toFixed(2);
+  const fb = document.getElementById('quiz-feedback');
+  fb.className = 'feedback-box '+(correct?'feedback-correct':'feedback-wrong');
+  fb.style.display='block';
+  fb.innerHTML = `<strong>${correct?'✓ Corretto!':'✗ Sbagliato.'}</strong> ${q.explanation}`;
+  document.getElementById('btn-quiz-next').classList.remove('hidden');
+}
+
+function quizNext() {
+  quizState.current++;
+  if(quizState.current>=quizState.count) showQuizResults();
+  else loadQuizQ();
+}
+
+function showQuizResults() {
+  document.getElementById('quiz-running').classList.add('hidden');
+  document.getElementById('quiz-results').classList.remove('hidden');
+  const score = quizState.score;
+  const acc = quizState.count>0?Math.round(quizState.correct/quizState.count*100):0;
+  document.getElementById('quiz-res-emoji').textContent = score>=quizState.count*0.7?'🎉':score>=quizState.count*0.4?'👍':'💪';
+  document.getElementById('quiz-res-title').textContent = score>=quizState.count*0.7?'Ottimo risultato!':'Continua ad allenarti!';
+  document.getElementById('quiz-res-score').textContent = score.toFixed(2);
+  document.getElementById('quiz-res-max').textContent = quizState.count;
+  document.getElementById('qr-corr').textContent = quizState.correct;
+  document.getElementById('qr-wrong').textContent = quizState.wrong;
+  document.getElementById('qr-acc').textContent = acc+'%';
+}
+
+function endQuizEarly() { showQuizResults(); }
+function restartQuiz() {
+  document.getElementById('quiz-results').classList.add('hidden');
+  startQuiz();
+}
+
+// ===== SIMULATION =====
+let simState = { secIdx:0, qIdx:0, questions:[], answers:[], timer:null, timeLeft:0, score:0 };
+
+function renderSimStructure() {
+  const secs = TESTS[APP.user.test]?.sections || [];
+  document.getElementById('sim-structure').innerHTML = secs.map(s=>`
+    <div class="flex items-center gap-3" style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <span style="width:24px;text-align:center;">${s.icon}</span>
+      <span style="flex:1;font-size:14px;">${s.name}</span>
+      <span class="text-sm text-muted">${s.count} domande</span>
+      <span class="tag tag-blue">${s.time} min</span>
+    </div>`).join('');
+}
+
+async function startSim() {
+  simState = {secIdx:0,qIdx:0,questions:[],answers:[],timer:null,timeLeft:0,score:0};
+  document.getElementById('sim-setup').classList.add('hidden');
+  document.getElementById('sim-running').classList.remove('hidden');
+  document.getElementById('sim-results').classList.add('hidden');
+  startSimSection();
+}
+
+function startSimSection() {
+  const secs = TESTS[APP.user.test]?.sections || [];
+  const sec = secs[simState.secIdx];
+  simState.timeLeft = sec.time*60;
+  clearInterval(simState.timer);
+  simState.timer = setInterval(simTick,1000);
+  loadSimQ();
+}
+
+function simTick() {
+  simState.timeLeft--;
+  const sec = TESTS[APP.user.test]?.sections[simState.secIdx];
+  const pct = simState.timeLeft/(sec.time*60)*100;
+  const m=Math.floor(simState.timeLeft/60), s=simState.timeLeft%60;
+  const timerEl = document.getElementById('sim-timer-display');
+  timerEl.textContent = m+':'+(s<10?'0':'')+s;
+  timerEl.className = 'sim-timer '+(pct>50?'ok':pct>20?'warn':'');
+  if(simState.timeLeft<=0) {
+    clearInterval(simState.timer);
+    // fill remaining with skips
+    const secs = TESTS[APP.user.test]?.sections || [];
+    const remaining = secs[simState.secIdx].count - simState.qIdx;
+    for(let i=0;i<remaining;i++) simState.answers.push(0);
+    simState.secIdx++; simState.qIdx=0;
+    if(simState.secIdx>=secs.length) endSim();
+    else startSimSection();
+  }
+}
+
+async function loadSimQ() {
+  const secs = TESTS[APP.user.test]?.sections || [];
+  const sec = secs[simState.secIdx];
+  const globalQ = secs.slice(0,simState.secIdx).reduce((a,s)=>a+s.count,0) + simState.qIdx+1;
+  const totalQ = secs.reduce((a,s)=>a+s.count,0);
+  document.getElementById('sim-sec-tag').textContent = sec.icon+' '+sec.name;
+  document.getElementById('sim-qnum-txt').textContent = `Dom. ${globalQ}/${totalQ}`;
+  document.getElementById('sim-bar').style.width = (globalQ/totalQ*100)+'%';
+  document.getElementById('sim-q').textContent='Carico domanda...';
+  document.getElementById('sim-opts').innerHTML='';
+  document.getElementById('btn-sim-next').classList.add('hidden');
+  document.getElementById('sim-context').style.display='none';
+  document.getElementById('sim-loading').classList.remove('hidden');
+
+  try {
+    const raw = await callClaude([{role:'user',content:`Genera domanda ${simState.qIdx+1} di ${sec.count} per la sezione ${sec.id}.`}], getQuizSystem(sec.id,'misto'));
+    const q = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    simState.questions.push(q);
+    document.getElementById('sim-loading').classList.add('hidden');
+    if(q.context){document.getElementById('sim-context').textContent=q.context;document.getElementById('sim-context').style.display='block';}
+    document.getElementById('sim-q').textContent=q.question;
+    const optsEl = document.getElementById('sim-opts');
+    optsEl.innerHTML='';
+    q.options.forEach((opt,i)=>{
+      const btn=document.createElement('button');
+      btn.className='option-btn'; btn.textContent=opt;
+      btn.onclick=()=>answerSim(i);
+      optsEl.appendChild(btn);
+    });
+  } catch(e) {
+    document.getElementById('sim-loading').classList.add('hidden');
+    document.getElementById('sim-q').textContent='Errore. Salta questa domanda.';
+    document.getElementById('btn-sim-next').classList.remove('hidden');
+  }
+}
+
+function answerSim(idx) {
+  const q = simState.questions[simState.questions.length-1];
+  document.querySelectorAll('#sim-opts .option-btn').forEach(b=>b.disabled=true);
+  const correct=idx===q.correct;
+  document.querySelectorAll('#sim-opts .option-btn')[idx].classList.add(correct?'correct':'wrong');
+  if(!correct) document.querySelectorAll('#sim-opts .option-btn')[q.correct].classList.add('reveal');
+  simState.answers.push(correct?1:-0.25);
+  document.getElementById('btn-sim-next').classList.remove('hidden');
+}
+
+function simSkip() {
+  simState.answers.push(0);
+  simAdvance();
+}
+function simNext() { simAdvance(); }
+
+async function simAdvance() {
+  simState.qIdx++;
+  const secs = TESTS[APP.user.test]?.sections||[];
+  if(simState.qIdx>=secs[simState.secIdx].count) {
+    clearInterval(simState.timer);
+    simState.secIdx++;simState.qIdx=0;
+    if(simState.secIdx>=secs.length){endSim();return;}
+    startSimSection();
+  } else loadSimQ();
+}
+
+function endSim() {
+  clearInterval(simState.timer);
+  document.getElementById('sim-running').classList.add('hidden');
+  document.getElementById('sim-results').classList.remove('hidden');
+  const secs = TESTS[APP.user.test]?.sections||[];
+  const corr=simState.answers.filter(a=>a===1).length;
+  const wrong=simState.answers.filter(a=>a===-0.25).length;
+  const skip=simState.answers.filter(a=>a===0).length;
+  const score=Math.max(0,corr-wrong*0.25);
+  document.getElementById('sim-res-emoji').textContent=score>=APP.user.goal?'🎉':score>=APP.user.goal*0.7?'👍':'💪';
+  document.getElementById('sim-res-title').textContent=score>=APP.user.goal?'Obiettivo raggiunto! Ottimo!':'Continua ad allenarti!';
+  document.getElementById('sim-res-score').textContent=score.toFixed(2);
+  document.getElementById('sim-res-goal').textContent=APP.user.goal;
+  document.getElementById('sr-corr').textContent=corr;
+  document.getElementById('sr-wrong').textContent=wrong;
+  document.getElementById('sr-skip').textContent=skip;
+  document.getElementById('sr-acc').textContent=corr>0?Math.round(corr/(corr+wrong)*100)+'%':'0%';
+  let secHtml='';
+  secs.forEach((sec,i)=>{
+    const start=secs.slice(0,i).reduce((a,s)=>a+s.count,0);
+    const secAns=simState.answers.slice(start,start+sec.count);
+    const sc=Math.max(0,secAns.filter(a=>a===1).length-secAns.filter(a=>a===-0.25).length*0.25);
+    const pct=sc/sec.count*100;
+    secHtml+=`<div class="section-result-row">
+      <span style="width:130px;font-size:14px;">${sec.icon} ${sec.name}</span>
+      <div class="section-result-bar-wrap"><div class="section-result-bar" style="width:${pct}%;background:${pct>=70?'var(--green)':pct>=40?'var(--amber)':'var(--red)'};"></div></div>
+      <span class="text-sm" style="width:60px;text-align:right;">${sc.toFixed(2)}/${sec.count}</span>
+    </div>`;
+    APP.stats[sec.id].done+=sec.count;
+    APP.stats[sec.id].score+=sc;
+    APP.stats[sec.id].correct+=secAns.filter(a=>a===1).length;
+  });
+  document.getElementById('sim-sec-results').innerHTML=secHtml;
+  APP.simHistory.push({date:new Date().toLocaleDateString('it-IT'),score:score.toFixed(2),corr,wrong,skip});
+  save();
+  toast(score>=APP.user.goal?'🎉 Obiettivo raggiunto!':'Simulazione salvata','green');
+}
+
+// ===== FLASHCARDS (SM-2) =====
+function sm2(card, quality) {
+  if(quality>=3) {
+    if(card.reps===0) card.interval=1;
+    else if(card.reps===1) card.interval=6;
+    else card.interval=Math.round(card.interval*card.ef);
+    card.reps++;
+  } else { card.reps=0; card.interval=1; }
+  card.ef=Math.max(1.3, card.ef+(0.1-(5-quality)*(0.08+(5-quality)*0.02)));
+  card.due=new Date(Date.now()+card.interval*86400000).toDateString();
+  return card;
+}
+
+function getFCDue() {
+  const today=new Date().toDateString();
+  return APP.flashcards.filter(fc=>!fc.due||fc.due<=today);
+}
+
+let fcSession={cards:[],idx:0,flipped:false};
+
+function startFCSession() {
+  const due=getFCDue();
+  if(due.length===0){toast('Nessuna flashcard da rivedere oggi!','amber');return;}
+  fcSession={cards:[...due],idx:0,flipped:false};
+  document.getElementById('fc-overview').classList.add('hidden');
+  document.getElementById('fc-create').classList.add('hidden');
+  document.getElementById('fc-session').classList.remove('hidden');
+  showFCCard();
+}
+
+function showFCCard() {
+  if(fcSession.idx>=fcSession.cards.length){endFCSession();return;}
+  const card=fcSession.cards[fcSession.idx];
+  fcSession.flipped=false;
+  document.getElementById('flashcard-el').classList.remove('flipped');
+  document.getElementById('fc-front-text').textContent=card.front;
+  document.getElementById('fc-back-text').textContent=card.back;
+  document.getElementById('srs-btns').classList.add('hidden');
+  document.getElementById('fc-session-progress').textContent=`Card ${fcSession.idx+1} di ${fcSession.cards.length}`;
+}
+
+function flipCard() {
+  if(fcSession.flipped) return;
+  fcSession.flipped=true;
+  document.getElementById('flashcard-el').classList.add('flipped');
+  setTimeout(()=>document.getElementById('srs-btns').classList.remove('hidden'),400);
+}
+
+function rateCard(quality) {
+  const cardInApp=APP.flashcards.find(fc=>fc.id===fcSession.cards[fcSession.idx].id);
+  if(cardInApp) sm2(cardInApp,quality);
+  save();
+  fcSession.idx++;
+  showFCCard();
+}
+
+function endFCSession() {
+  document.getElementById('fc-session').classList.add('hidden');
+  document.getElementById('fc-overview').classList.remove('hidden');
+  renderFCList(); updateFCCounts();
+  toast('Sessione completata! 🎉','green');
+}
+
+function renderFCList() {
+  const el=document.getElementById('fc-list');
+  if(APP.flashcards.length===0){el.innerHTML='<p class="text-muted text-sm" style="padding:1rem 0;">Nessuna flashcard ancora. Creane una o generane con AI!</p>';return;}
+  el.innerHTML=APP.flashcards.slice(0,20).map(fc=>`
+    <div class="flex items-center gap-3" style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${fc.front}</p>
+        <p class="text-xs text-muted" style="margin-top:2px;">${fc.section||'generale'} · scadenza: ${fc.due||'oggi'}</p>
+      </div>
+      <span class="tag ${getFCDue().find(f=>f.id===fc.id)?'tag-amber':'tag-green'}">${getFCDue().find(f=>f.id===fc.id)?'Da rivedere':'Ok'}</span>
+      <button onclick="deleteFC('${fc.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;">×</button>
+    </div>`).join('');
+}
+
+function updateFCCounts() {
+  const due=getFCDue().length;
+  const mastered=APP.flashcards.filter(fc=>fc.ef>2.4&&fc.reps>3).length;
+  document.getElementById('fc-total-count').textContent=APP.flashcards.length;
+  document.getElementById('fc-due-count').textContent=due;
+  document.getElementById('fc-mastered').textContent=mastered;
+  document.getElementById('dash-fc-due').textContent=due;
+  document.getElementById('fc-due-dash').textContent=due+' da rivedere oggi';
+}
+
+function showCreateFC() {
+  document.getElementById('fc-overview').classList.add('hidden');
+  document.getElementById('fc-session').classList.add('hidden');
+  document.getElementById('fc-create').classList.remove('hidden');
+}
+
+function cancelCreateFC() {
+  document.getElementById('fc-create').classList.add('hidden');
+  document.getElementById('fc-overview').classList.remove('hidden');
+}
+
+function saveNewFC() {
+  const front=document.getElementById('fc-new-front').value.trim();
+  const back=document.getElementById('fc-new-back').value.trim();
+  if(!front||!back){toast('Compila entrambi i campi','amber');return;}
+  APP.flashcards.push({id:Date.now().toString(),front,back,reps:0,ef:2.5,interval:1,due:new Date().toDateString(),section:'manuale'});
+  save(); cancelCreateFC(); renderFCList(); updateFCCounts();
+  document.getElementById('fc-new-front').value=''; document.getElementById('fc-new-back').value='';
+  toast('Flashcard salvata!','green');
+}
+
+function deleteFC(id) {
+  APP.flashcards=APP.flashcards.filter(fc=>fc.id!==id);
+  save(); renderFCList(); updateFCCounts();
+}
+
+async function generateFCWithAI() {
+  toast('Generando flashcard con AI...','blue');
+  const secs=TESTS[APP.user.test]?.sections||[];
+  const weakSec=secs.reduce((min,s)=>{const st=APP.stats[s.id];return (st.done>0&&st.correct/st.done<(APP.stats[min?.id]?.correct/APP.stats[min?.id]?.done||1))?s:min;},secs[0]);
+  try {
+    const raw=await callClaude([{role:'user',content:`Genera 5 flashcard per la sezione ${weakSec?.name||'biologia'} del ${TESTS[APP.user.test]?.name}. Rispondi SOLO con JSON: [{"front":"domanda","back":"risposta dettagliata"},...] senza markdown.`}],getTutorSystem(),800);
+    const cards=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    cards.forEach(c=>{APP.flashcards.push({id:Date.now().toString()+Math.random(),front:c.front,back:c.back,reps:0,ef:2.5,interval:1,due:new Date().toDateString(),section:weakSec?.id||'ai'});});
+    save(); renderFCList(); updateFCCounts();
+    toast(`${cards.length} flashcard generate!`,'green');
+  } catch(e){ toast('Errore nella generazione','red'); }
+}
+
+// ===== TUTOR CHAT =====
+function initChat() {
+  const chips=[
+    'Spiega un concetto difficile',`Quali sono le mie sezioni più deboli?`,'Crea un quiz veloce','Come preparo il test in 2 settimane?','Spiega la differenza DNA/RNA','Cos\'è un sillogismo?'
+  ];
+  document.getElementById('quick-chips').innerHTML=chips.map(c=>`<div class="chip" onclick="quickChat('${c}')">${c}</div>`).join('');
+  addChatMsg('Ciao '+APP.user.name+'! 👋 Sono il tuo tutor AI per il '+TESTS[APP.user.test]?.name+'. Conosco i tuoi progressi e sono qui per aiutarti a raggiungere '+APP.user.goal+' punti. Come posso aiutarti oggi?','ai');
+}
+
+function quickChat(txt) { document.getElementById('chat-in').value=txt; sendChat(); }
+function chatKeydown(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
+
+async function sendChat() {
+  const input=document.getElementById('chat-in');
+  const msg=input.value.trim(); if(!msg)return;
+  input.value='';
+  addChatMsg(msg,'user');
+  APP.chatHistory.push({role:'user',content:msg});
+  const typingId='typing-'+Date.now();
+  addChatMsg('...','ai',typingId);
+  try {
+    const reply=await callClaude(APP.chatHistory.slice(-10),getTutorSystem(),1500);
+    document.getElementById(typingId)?.remove();
+    APP.chatHistory.push({role:'assistant',content:reply});
+    addChatMsg(reply,'ai');
+  } catch(e) {
+    document.getElementById(typingId)?.remove();
+    addChatMsg('Errore di connessione. Riprova.','ai');
+  }
+}
+
+function addChatMsg(text,who,id) {
+  const el=document.getElementById('chat-msgs');
+  const div=document.createElement('div');
+  div.className='msg msg-'+who;
+  if(id) div.id=id;
+  div.innerHTML=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  el.appendChild(div);
+  el.scrollTop=el.scrollHeight;
+}
+
+// ===== STUDY PLAN =====
+async function generatePlan() {
+  const btn=document.querySelector('[onclick="generatePlan()"]');
+  btn.textContent='Generando...'; btn.disabled=true;
+  try {
+    const secs=TESTS[APP.user.test]?.sections||[];
+    const statsStr=secs.map(s=>{const st=APP.stats[s.id];return `${s.name}: ${st.done} dom fatte, ${st.correct} corrette (${st.done>0?Math.round(st.correct/st.done*100):0}%)`; }).join('\n');
+    const raw=await callClaude([{role:'user',content:`Crea un piano di studio settimanale personalizzato per ${APP.user.name} che vuole raggiungere ${APP.user.goal}/50 al ${TESTS[APP.user.test]?.name}.\nStatistiche attuali:\n${statsStr}\n\nRispondi SOLO con JSON:\n{"days":[{"day":"Lunedì","focus":"sezione principale","tasks":["task 1","task 2","task 3"],"duration":"90 min"},...],"advice":"consiglio generale"}`}],getTutorSystem(),1500);
+    const plan=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    APP.studyPlan=plan; save();
+    renderPlan(plan);
+  } catch(e){ toast('Errore generazione piano','red'); }
+  btn.textContent='✨ Genera nuovo piano'; btn.disabled=false;
+}
+
+function renderPlan(plan) {
+  const days=plan.days||[];
+  let html=`<div class="card mb-4" style="background:var(--accent-glow);border-color:rgba(124,106,247,0.3);"><p style="font-size:14px;line-height:1.7;">${plan.advice||''}</p></div>`;
+  html+=days.map((d,i)=>`
+    <div class="plan-day ${i===0?'open':''}" id="plan-day-${i}">
+      <div class="plan-day-header" onclick="togglePlanDay(${i})">
+        <span style="font-size:16px;">📅</span>
+        <div style="flex:1;"><strong style="font-size:14px;">${d.day}</strong><span class="text-xs text-muted" style="margin-left:8px;">${d.focus}</span></div>
+        <span class="tag tag-blue">${d.duration}</span>
+        <span style="color:var(--text3);font-size:12px;margin-left:8px;">▼</span>
+      </div>
+      <div class="plan-day-body">
+        ${(d.tasks||[]).map((t,ti)=>`<div class="plan-task"><div class="plan-task-check" onclick="toggleTask(${i},${ti})" id="task-${i}-${ti}"></div><span style="font-size:14px;">${t}</span></div>`).join('')}
+      </div>
+    </div>`).join('');
+  document.getElementById('plan-content').innerHTML=html;
+}
+
+function togglePlanDay(i) {
+  document.getElementById('plan-day-'+i).classList.toggle('open');
+}
+
+function toggleTask(di,ti) {
+  const el=document.getElementById('task-'+di+'-'+ti);
+  el.classList.toggle('done');
+  el.textContent=el.classList.contains('done')?'✓':'';
+}
+
+// ===== PDF UPLOAD =====
+function handleFileUpload(e) {
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    APP.uploadedText=ev.target.result.slice(0,8000);
+    APP.uploadedName=file.name;
+    document.getElementById('uploaded-files-list').innerHTML=`<div class="card mb-4 flex items-center gap-3"><span style="font-size:20px;">📄</span><div style="flex:1;"><p style="font-size:14px;font-weight:500;">${file.name}</p><p class="text-xs text-muted">${Math.round(file.size/1024)}KB caricato</p></div><span class="tag tag-green">Pronto</span></div>`;
+    document.getElementById('pdf-actions').classList.remove('hidden');
+    toast('File caricato!','green');
+  };
+  reader.readAsText(file);
+}
+
+async function pdfAction(type) {
+  if(!APP.uploadedText){toast('Carica prima un file','amber');return;}
+  const resultEl=document.getElementById('pdf-result');
+  resultEl.classList.remove('hidden');
+  resultEl.innerHTML='<div class="loading-row"><div class="spinner"></div><span>AI sta elaborando...</span></div>';
+
+  const prompts={
+    quiz:`Basandoti su questo testo, genera 5 domande stile TOLC con 4 opzioni (A,B,C,D) e risposte. Rispondi in formato leggibile.\n\nTESTO:\n${APP.uploadedText}`,
+    flashcards:`Basandoti su questo testo, estrai 8 concetti chiave e crea flashcard (domanda/risposta). Rispondi con JSON: [{"front":"...","back":"..."}]\n\nTESTO:\n${APP.uploadedText}`,
+    summary:`Fai un riassunto strutturato di questo testo con i punti chiave, concetti importanti e uno schema finale.\n\nTESTO:\n${APP.uploadedText}`
+  };
+
+  try {
+    const reply=await callClaude([{role:'user',content:prompts[type]}],getTutorSystem(),2000);
+    if(type==='flashcards') {
+      const cards=JSON.parse(reply.replace(/```json|```/g,'').trim());
+      cards.forEach(c=>{APP.flashcards.push({id:Date.now().toString()+Math.random(),front:c.front,back:c.back,reps:0,ef:2.5,interval:1,due:new Date().toDateString(),section:'pdf'});});
+      save();
+      resultEl.innerHTML=`<div class="card"><p style="color:var(--green);font-weight:500;margin-bottom:8px;">✓ ${cards.length} flashcard create e aggiunte!</p></div>`;
+      toast(cards.length+' flashcard create!','green');
+    } else {
+      resultEl.innerHTML=`<div class="card"><div style="font-size:14px;line-height:1.8;white-space:pre-wrap;">${reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div></div>`;
+    }
+  } catch(e){resultEl.innerHTML='<div class="card"><p class="text-muted">Errore. Riprova.</p></div>';}
+}
+
+// ===== STATS PAGE =====
+let chartSection=null, chartTrend=null;
+function renderStatsPage() {
+  const secs=TESTS[APP.user.test]?.sections||[];
+  const labels=secs.map(s=>s.name);
+  const scores=secs.map(s=>Math.max(0,APP.stats[s.id]?.score||0));
+  const accs=secs.map(s=>{const st=APP.stats[s.id];return st&&st.done>0?Math.round(st.correct/st.done*100):0;});
+
+  if(chartSection) chartSection.destroy();
+  const ctxS=document.getElementById('chart-section').getContext('2d');
+  chartSection=new Chart(ctxS,{type:'bar',data:{labels,datasets:[{label:'Punteggio',data:scores,backgroundColor:'rgba(124,106,247,0.6)',borderColor:'rgba(124,106,247,1)',borderWidth:1,borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#9090a8'}},x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#9090a8'}}}}});
+
+  const simH=APP.simHistory.slice(-8);
+  if(chartTrend) chartTrend.destroy();
+  const ctxT=document.getElementById('chart-trend').getContext('2d');
+  chartTrend=new Chart(ctxT,{type:'line',data:{labels:simH.map(s=>s.date),datasets:[{label:'Punteggio',data:simH.map(s=>parseFloat(s.score)),borderColor:'rgba(124,106,247,1)',backgroundColor:'rgba(124,106,247,0.1)',fill:true,tension:0.4,pointBackgroundColor:'rgba(124,106,247,1)'}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false,min:0,max:50,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#9090a8'}},x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#9090a8'}}}}});
+
+  document.getElementById('stats-detail').innerHTML=secs.map(s=>{
+    const st=APP.stats[s.id];
+    const acc=st&&st.done>0?Math.round(st.correct/st.done*100):0;
+    return `<div class="section-result-row">
+      <span style="width:160px;font-size:14px;">${s.icon} ${s.name}</span>
+      <div class="section-result-bar-wrap"><div class="section-result-bar" style="width:${acc}%;background:${acc>=70?'var(--green)':acc>=40?'var(--amber)':'var(--red)'};"></div></div>
+      <span class="text-sm text-muted" style="width:80px;text-align:right;">${st?.done||0} dom · ${acc}%</span>
+    </div>`;}).join('');
+
+  document.getElementById('sim-history').innerHTML=APP.simHistory.length===0?'<p class="text-muted text-sm">Nessuna simulazione ancora.</p>':APP.simHistory.slice().reverse().map(s=>`
+    <div class="flex items-center justify-between" style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <span class="text-sm text-muted">${s.date}</span>
+      <span class="text-sm">✅ ${s.corr} &nbsp; ❌ ${s.wrong} &nbsp; ⏭️ ${s.skip}</span>
+      <span class="tag ${parseFloat(s.score)>=APP.user.goal?'tag-green':parseFloat(s.score)>=APP.user.goal*0.7?'tag-amber':'tag-red'}">${s.score}/50</span>
+    </div>`).join('');
+}
+
+function renderStats() {} // placeholder
+
+// ===== TOAST =====
+function toast(msg, color='green') {
+  const colors={green:'var(--green)',red:'var(--red)',amber:'var(--amber)',blue:'var(--blue)'};
+  const icons={green:'✓',red:'✗',amber:'⚠',blue:'ℹ'};
+  const el=document.createElement('div');
+  el.className='toast-item';
+  el.innerHTML=`<span style="color:${colors[color]};font-weight:500;">${icons[color]}</span> ${msg}`;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+// ===== BOOT =====
+load();
+const isSetup = APP.user.name && APP.user.apiKey;
+if(isSetup) {
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('app').classList.remove('hidden');
+  initApp();
+} else {
+  document.getElementById('setup-screen').style.display='flex';
+}
+</script>
+</body>
+</html>
