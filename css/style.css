@@ -1,0 +1,255 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: #0a0a12;
+  color: #e8e0d0;
+  overflow: hidden;
+}
+
+.hidden { display: none !important; }
+
+/* ---------- Overlay (selezione classe / morte) ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a12 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.panel {
+  text-align: center;
+  max-width: 980px;
+  padding: 30px;
+}
+
+.panel h1 {
+  font-size: 42px;
+  color: #d4af37;
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+.subtitle { color: #998; margin-bottom: 30px; }
+.hint { margin-top: 24px; color: #776; font-style: italic; }
+
+.classes {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.class-card {
+  width: 210px;
+  background: linear-gradient(180deg, #1e1e30, #14141f);
+  border: 1px solid #3a3a50;
+  border-radius: 10px;
+  padding: 22px 16px;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.class-card:hover {
+  transform: translateY(-6px);
+  border-color: #d4af37;
+  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.25);
+}
+
+.class-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+}
+
+.class-card h2 { font-size: 19px; margin-bottom: 8px; color: #d4af37; }
+.class-card p { font-size: 13px; color: #aa9; margin-bottom: 10px; min-height: 48px; }
+.class-card ul { list-style: none; font-size: 12px; color: #887; }
+.class-card li::before { content: "✦ "; color: #d4af37; }
+
+#respawn-btn {
+  margin-top: 20px;
+  padding: 12px 32px;
+  font-size: 17px;
+  background: #d4af37;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+#respawn-btn:hover { background: #f0cf5a; }
+
+/* ---------- Gioco ---------- */
+#game-container { position: fixed; inset: 0; }
+#game { display: block; width: 100%; height: 100%; }
+
+/* HUD giocatore */
+#hud {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#player-frame {
+  background: rgba(10, 10, 20, 0.75);
+  border: 1px solid #3a3a50;
+  border-radius: 8px;
+  padding: 10px 14px;
+  width: 260px;
+}
+
+#player-name { font-size: 14px; color: #d4af37; margin-bottom: 6px; font-weight: bold; }
+
+.bar {
+  position: relative;
+  height: 16px;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+.bar.small { height: 10px; }
+.bar .fill { height: 100%; width: 100%; transition: width 0.15s; }
+.hp-bar .fill { background: linear-gradient(180deg, #e74c3c, #962d22); }
+.mp-bar .fill { background: linear-gradient(180deg, #3498db, #1f618d); }
+.xp-bar { height: 9px; }
+.xp-bar .fill { background: linear-gradient(180deg, #d4af37, #8a701f); }
+.bar span {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  font-size: 10px;
+  line-height: 15px;
+  color: #fff;
+  text-shadow: 0 1px 2px #000;
+}
+
+#gold-frame {
+  background: rgba(10, 10, 20, 0.75);
+  border: 1px solid #3a3a50;
+  border-radius: 8px;
+  padding: 6px 14px;
+  width: fit-content;
+  font-size: 14px;
+  color: #ffd75e;
+}
+
+/* Bersaglio */
+#target-frame {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 20, 0.75);
+  border: 1px solid #703a3a;
+  border-radius: 8px;
+  padding: 8px 14px;
+  width: 220px;
+  text-align: center;
+}
+#target-name { font-size: 13px; color: #ff9d8a; margin-bottom: 5px; }
+
+/* Barra abilità */
+#skillbar {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.skill-slot {
+  position: relative;
+  min-width: 110px;
+  background: rgba(10, 10, 20, 0.8);
+  border: 1px solid #3a3a50;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  text-align: center;
+  user-select: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+.skill-slot:hover { border-color: #d4af37; }
+.skill-slot .key {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  font-size: 10px;
+  color: #d4af37;
+  font-weight: bold;
+}
+.skill-slot .skill-name { display: block; margin-top: 8px; color: #cbc; }
+.skill-slot .cooldown {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  transform-origin: bottom;
+  transform: scaleY(0);
+  pointer-events: none;
+}
+
+/* Log */
+#log {
+  position: absolute;
+  bottom: 18px;
+  left: 14px;
+  width: 320px;
+  max-height: 150px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column-reverse;
+  font-size: 12px;
+  pointer-events: none;
+}
+#log .msg {
+  background: rgba(10, 10, 20, 0.6);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 2px;
+  color: #bbb;
+  animation: fadeout 8s forwards;
+}
+#log .msg.combat { color: #ff9d8a; }
+#log .msg.loot { color: #ffd75e; }
+#log .msg.levelup { color: #7df58a; font-weight: bold; }
+
+@keyframes fadeout {
+  0%, 75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Minimappa */
+#minimap {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  border: 1px solid #3a3a50;
+  border-radius: 8px;
+  background: rgba(10, 10, 20, 0.75);
+}
+
+/* Aiuto comandi */
+#controls-help {
+  position: absolute;
+  bottom: 2px;
+  right: 8px;
+  font-size: 11px;
+  color: #554;
+}
