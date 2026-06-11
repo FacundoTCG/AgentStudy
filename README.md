@@ -1,42 +1,123 @@
-# Regni d'Oriente — MMORPG Test
+# ⚔ Regni d'Oriente — MMORPG Test
 
-Un MMORPG d'azione 2D giocabile direttamente nel browser, ispirato al gameplay
-degli MMORPG orientali classici. Tutto il codice e gli asset sono originali
-(grafica procedurale in canvas, nessuna risorsa esterna).
+Un MMORPG d'azione completo giocabile direttamente nel browser, ispirato al gameplay degli MMORPG orientali classici. Tutto il codice e gli asset sono originali (grafica procedurale 3D con Three.js).
 
-## Come giocare
+## Avvio rapido
 
-Apri `index.html` nel browser — non serve alcun server né dipendenza.
-Funziona anche su GitHub Pages.
+```bash
+# Per giocare offline: apri semplicemente
+index.html   ← nel browser (nessun server necessario)
 
-## Caratteristiche
+# Per il server multiplayer:
+cd server
+npm install
+npm start
+# poi vai su http://localhost:3000
+```
 
-- **4 classi**: Guerriero, Ninja, Mago Oscuro, Sciamano — ognuna con statistiche
-  e 3 abilità uniche (AoE, scatti, buff, cure, fulmine a catena, veleno...)
-- **Mondo aperto** 3200×3200 con villaggio (zona sicura con rigenerazione
-  accelerata), foreste e zone a difficoltà crescente man mano che ci si allontana
-- **Pietre Demoniache**: monoliti che evocano mostri finché non vengono
-  distrutti — ricompense in XP e oro elevate
-- **6 tipi di mostri** con AI (pattugliamento, aggro, inseguimento, attacco)
-- **Progressione**: livelli, XP, oro, pozioni, drop dei nemici
-- **HUD completo**: barre HP/MP/XP, frame del bersaglio, barra abilità con
-  cooldown, minimappa, log di combattimento
+## Architettura del progetto
 
-## Comandi
+```
+regni-doriente/
+├── index.html              ← Landing page con selezione classe
+├── game.html               ← Client di gioco 3D
+├── leaderboard.html        ← Classifiche globali
+│
+├── css/
+│   ├── style.css           ← Stile sito + componenti condivisi
+│   └── game.css            ← UI di gioco (HUD, pannelli, chat)
+│
+├── js/
+│   ├── data.js             ← Database di gioco (1230 righe)
+│   │                         classi, abilità, oggetti, mostri, mappe,
+│   │                         dungeon, NPC, negozi, missioni
+│   ├── engine.js           ← Motore 3D Three.js (1070 righe)
+│   │                         terreno, decorazioni, mesh personaggi,
+│   │                         effetti particellari, camera, minimap
+│   ├── systems.js          ← Sistemi di gioco (~900 righe)
+│   │                         CombatSystem, MonsterAI, InventorySystem,
+│   │                         QuestSystem, DungeonSystem, SaveSystem
+│   ├── ui.js               ← Interfaccia (~1000 righe)
+│   │                         HUD, inventario, missioni, personaggio,
+│   │                         mappa, dialoghi NPC, negozio, chat
+│   └── main.js             ← Loop di gioco + input + eventi (~700 righe)
+│
+├── server/
+│   ├── package.json        ← Node.js dependencies
+│   └── server.js           ← Server Express + Socket.io (~400 righe)
+│                             auth, personaggi, salvataggio, chat,
+│                             sessioni, classifiche API
+│
+└── db/
+    └── schema.sql          ← Schema SQLite completo
+                              accounts, characters, inventory, quests,
+                              dungeon_completions, chat_messages, views
+```
+
+## Sistemi implementati
+
+### Gioco
+- **Motore 3D** — Three.js, vista in terza persona, camera rotante, fog, ombre
+- **4 Classi** — Guerriero, Ninja, Mago Oscuro, Sciamano — ognuna con 4 abilità uniche
+- **16 Abilità** — AoE, multi-hit, scatti, buff, scudi, cure, fulmini a catena, veleno, esecuzione, meteorite...
+- **Combattimento real-time** — attacchi normali, critici, status (veleno, stun, rallentamento)
+- **12+ Mostri** — AI per tipo (basic, pack, ranged\_kite, aggressive, tank, boss)
+- **2 Dungeon** — Tana dei Banditi (lv6+) e Fortezza degli Orchi (lv11+), boss con fasi multiple
+- **Pietre Demoniache** — evocano mostri finché non vengono distrutte
+
+### Progressione
+- **20 Livelli** — curva XP `100 × lvl^1.7`
+- **40+ Oggetti** — 5 qualità (Comune/Non-comune/Raro/Epico/Leggendario)
+- **Inventario 30 slot** — equipaggiamento (arma, petto, anello, collana)
+- **4 Missioni** — obiettivi kill e collect, ricompense in XP/oro/oggetti
+
+### Online
+- **5 NPC** — con dialoghi, negozi, servizi (guarigione, osteria, quest)
+- **3 Negozi** — fabbro, mercante, guaritrice
+- **Chat** — locale/globale/gruppo
+- **Salvataggio automatico** — ogni 60s in localStorage (offline) o server (online)
+
+## Controlli
 
 | Tasto | Azione |
 |---|---|
-| `WASD` / frecce | Movimento |
-| `Spazio` / click | Attacco base |
-| `1` `2` `3` | Abilità di classe |
-| `4` | Pozione di cura |
-| `Tab` | Seleziona il nemico più vicino |
-| Click su nemico | Seleziona bersaglio |
+| `WASD` / Frecce | Movimento |
+| `Click sinistro` | Muovi / Attacca / Seleziona NPC |
+| `Click destro + trascina` | Ruota camera |
+| `Scroll` | Zoom camera |
+| `1 2 3` | Abilità di classe |
+| `Spazio` | Pozione di cura |
+| `Tab` | Seleziona nemico più vicino |
+| `I` | Inventario |
+| `J` | Registro missioni |
+| `C` | Scheda personaggio |
+| `M` | Mappa del mondo |
+| `Invio` | Apri chat |
+| `Esc` | Menu di pausa |
 
-## Struttura del progetto
+## Server (opzionale per multiplayer)
 
+Il server Node.js aggiunge:
+- Registrazione e login con password hashate (bcryptjs)
+- Salvataggio personaggi su database SQLite
+- Sessioni WebSocket (Socket.io) per posizioni in tempo reale
+- Chat globale sincronizzata
+- API REST per le classifiche
+- Stato mondo condiviso (mob aggro broadcastato)
+
+```bash
+cd server && npm install && npm start
+# Server in ascolto su http://localhost:3000
 ```
-index.html      — markup e UI (HUD, selezione classe, schermata morte)
-css/style.css   — stile dell'interfaccia
-js/game.js      — motore di gioco (loop, AI, combattimento, rendering)
-```
+
+## Tecnologie
+
+| Layer | Tecnologia |
+|---|---|
+| 3D Rendering | Three.js r128 (CDN) |
+| Server | Node.js + Express 4 |
+| Realtime | Socket.io 4 |
+| Database | SQLite (better-sqlite3) |
+| Auth | bcryptjs + UUID |
+| Persistenza offline | localStorage |
+| Asset | 100% procedurale — nessun file binario |

@@ -3,94 +3,279 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Regni d'Oriente — MMORPG Test</title>
+<title>Regni d'Oriente — MMORPG</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="landing">
 
-<!-- Schermata selezione classe -->
-<div id="class-select" class="overlay">
-  <div class="panel">
-    <h1>Regni d'Oriente</h1>
-    <p class="subtitle">Un MMORPG d'azione in stile orientale</p>
-    <div class="classes">
-      <div class="class-card" data-class="guerriero">
-        <div class="class-icon" style="background:#c0392b">⚔</div>
-        <h2>Guerriero</h2>
-        <p>Forza bruta e corpo a corpo. Alta vita e difesa.</p>
-        <ul><li>HP alti</li><li>Danno fisico</li><li>Colpo Rotante</li></ul>
-      </div>
-      <div class="class-card" data-class="ninja">
-        <div class="class-icon" style="background:#27ae60">🗡</div>
-        <h2>Ninja</h2>
-        <p>Velocità e attacchi critici. Letale ma fragile.</p>
-        <ul><li>Molto veloce</li><li>Critici alti</li><li>Raffica di Lame</li></ul>
-      </div>
-      <div class="class-card" data-class="mago">
-        <div class="class-icon" style="background:#8e44ad">🔥</div>
-        <h2>Mago Oscuro</h2>
-        <p>Magie devastanti a distanza. Consuma molto MP.</p>
-        <ul><li>Danno magico</li><li>Attacco a distanza</li><li>Sfera Infuocata</li></ul>
-      </div>
-      <div class="class-card" data-class="sciamano">
-        <div class="class-icon" style="background:#2980b9">⚡</div>
-        <h2>Sciamano</h2>
-        <p>Fulmini e cure. Equilibrato e versatile.</p>
-        <ul><li>Si cura da solo</li><li>Fulmine a catena</li><li>Benedizione</li></ul>
-      </div>
+<!-- Navigazione -->
+<nav id="top-nav">
+  <div class="nav-logo">⚔ Regni d'Oriente</div>
+  <div class="nav-links">
+    <a href="#features">Caratteristiche</a>
+    <a href="#classes">Classi</a>
+    <a href="#world">Il Mondo</a>
+    <a href="leaderboard.html">Classifiche</a>
+    <button id="play-now-btn" class="btn-primary">Gioca Ora</button>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <h1 class="hero-title">Regni <span class="gold">d'Oriente</span></h1>
+    <p class="hero-sub">Un MMORPG d'azione nel browser — Combatti, Livella, Conquista</p>
+    <div class="hero-buttons">
+      <button class="btn-primary btn-xl" id="start-btn">⚔ Inizia l'Avventura</button>
+      <button class="btn-secondary btn-xl" id="continue-btn" style="display:none">▶ Continua</button>
     </div>
-    <p class="hint">Scegli una classe per iniziare</p>
-  </div>
-</div>
-
-<!-- Schermata morte -->
-<div id="death-screen" class="overlay hidden">
-  <div class="panel">
-    <h1>Sei caduto in battaglia</h1>
-    <p id="death-stats"></p>
-    <button id="respawn-btn">Risorgi al villaggio</button>
-  </div>
-</div>
-
-<!-- Gioco -->
-<div id="game-container" class="hidden">
-  <canvas id="game"></canvas>
-
-  <!-- HUD -->
-  <div id="hud">
-    <div id="player-frame">
-      <div id="player-name">—</div>
-      <div class="bar hp-bar"><div id="hp-fill" class="fill"></div><span id="hp-text"></span></div>
-      <div class="bar mp-bar"><div id="mp-fill" class="fill"></div><span id="mp-text"></span></div>
-      <div class="bar xp-bar"><div id="xp-fill" class="fill"></div><span id="xp-text"></span></div>
+    <div class="hero-stats">
+      <div class="hstat"><span class="hstat-num">4</span><span class="hstat-label">Classi</span></div>
+      <div class="hstat"><span class="hstat-num">12+</span><span class="hstat-label">Tipi di Mostri</span></div>
+      <div class="hstat"><span class="hstat-num">2</span><span class="hstat-label">Dungeon</span></div>
+      <div class="hstat"><span class="hstat-num">40+</span><span class="hstat-label">Oggetti</span></div>
     </div>
-    <div id="gold-frame">💰 <span id="gold">0</span></div>
   </div>
+</section>
 
-  <!-- Bersaglio -->
-  <div id="target-frame" class="hidden">
-    <div id="target-name"></div>
-    <div class="bar hp-bar small"><div id="target-hp-fill" class="fill"></div></div>
+<!-- Features -->
+<section id="features">
+  <h2 class="section-title">Caratteristiche del Gioco</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feat-icon">⚔</div>
+      <h3>Combattimento in Tempo Reale</h3>
+      <p>Attacchi rapidi, abilità speciali con cooldown, critici e stati alterati (veleno, stun, rallentamento). Il combattimento richiede riflesssi e strategia.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feat-icon">🗺</div>
+      <h3>Mondo Aperto 3200×3200</h3>
+      <p>Foreste, accampamenti, lande demoniache. Ogni zona ha nemici di livello diverso. Le Pietre Demoniache evocano mostri finché non vengono distrutte.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feat-icon">🏰</div>
+      <h3>Dungeon con Boss</h3>
+      <p>Tana dei Banditi e Fortezza degli Orchi. Boss con fasi multiple, meccaniche speciali e bottino epico. Reset ogni ora.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feat-icon">🎒</div>
+      <h3>Sistema di Oggetti Completo</h3>
+      <p>40+ oggetti in 5 qualità (Comune → Leggendario). Armi, armature, accessori, consumabili. Inventario 30 slot con drop in tempo reale.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feat-icon">📜</div>
+      <h3>Missioni e Storia</h3>
+      <p>Quest con obiettivi multipli (uccidi, raccogli, boss). NPC con dialoghi, negozi e servizi. Ricompense in XP, oro e oggetti rari.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feat-icon">💾</div>
+      <h3>Salvataggio Automatico</h3>
+      <p>Il progresso viene salvato automaticamente ogni minuto. Riprendi da dove hai lasciato. Server opzionale per il gioco multigiocatore.</p>
+    </div>
   </div>
+</section>
 
-  <!-- Barra abilità -->
-  <div id="skillbar">
-    <div class="skill-slot" data-slot="0"><span class="key">1</span><span class="skill-name"></span><div class="cooldown"></div></div>
-    <div class="skill-slot" data-slot="1"><span class="key">2</span><span class="skill-name"></span><div class="cooldown"></div></div>
-    <div class="skill-slot" data-slot="2"><span class="key">3</span><span class="skill-name"></span><div class="cooldown"></div></div>
-    <div class="skill-slot potion" data-slot="pot"><span class="key">4</span><span class="skill-name">Pozione (<b id="potion-count">3</b>)</span><div class="cooldown"></div></div>
+<!-- Classes -->
+<section id="classes">
+  <h2 class="section-title">Scegli la tua Classe</h2>
+  <div class="classes-grid">
+    <div class="class-showcase" data-class="guerriero">
+      <div class="class-badge" style="background:#c0392b">⚔</div>
+      <h3>Guerriero</h3>
+      <p>Combattente in prima linea. Alta vita, alta difesa, danni fisici devastanti.</p>
+      <div class="class-bar-row"><span>HP</span><div class="mini-bar"><div style="width:95%;background:#e74c3c"></div></div></div>
+      <div class="class-bar-row"><span>ATK</span><div class="mini-bar"><div style="width:80%;background:#f39c12"></div></div></div>
+      <div class="class-bar-row"><span>VEL</span><div class="mini-bar"><div style="width:50%;background:#3498db"></div></div></div>
+      <div class="class-skills">
+        <span>⚔ Colpo Rotante</span>
+        <span>📯 Urlo di Guerra</span>
+        <span>🏃 Carica</span>
+        <span>😡 Furia Berserker</span>
+      </div>
+      <button class="btn-class" data-class="guerriero">Scegli Guerriero</button>
+    </div>
+    <div class="class-showcase" data-class="ninja">
+      <div class="class-badge" style="background:#27ae60">🗡</div>
+      <h3>Ninja</h3>
+      <p>Veloce e letale. Specialista in critici, veleno e scatti improvvisi.</p>
+      <div class="class-bar-row"><span>HP</span><div class="mini-bar"><div style="width:60%;background:#e74c3c"></div></div></div>
+      <div class="class-bar-row"><span>ATK</span><div class="mini-bar"><div style="width:85%;background:#f39c12"></div></div></div>
+      <div class="class-bar-row"><span>VEL</span><div class="mini-bar"><div style="width:95%;background:#3498db"></div></div></div>
+      <div class="class-skills">
+        <span>🗡 Raffica di Lame</span>
+        <span>👤 Passo Ombra</span>
+        <span>☠ Lama Avvelenata</span>
+        <span>💀 Assassinio</span>
+      </div>
+      <button class="btn-class" data-class="ninja">Scegli Ninja</button>
+    </div>
+    <div class="class-showcase" data-class="mago">
+      <div class="class-badge" style="background:#8e44ad">🔮</div>
+      <h3>Mago Oscuro</h3>
+      <p>Magie devastanti a distanza. Alta MP, danni magici enormi ma fragile.</p>
+      <div class="class-bar-row"><span>HP</span><div class="mini-bar"><div style="width:45%;background:#e74c3c"></div></div></div>
+      <div class="class-bar-row"><span>M.ATK</span><div class="mini-bar"><div style="width:97%;background:#f39c12"></div></div></div>
+      <div class="class-bar-row"><span>MP</span><div class="mini-bar"><div style="width:92%;background:#9b59b6"></div></div></div>
+      <div class="class-skills">
+        <span>🔥 Sfera Infuocata</span>
+        <span>❄ Lancia Gelida</span>
+        <span>🔵 Scudo Arcano</span>
+        <span>☄ Meteorite</span>
+      </div>
+      <button class="btn-class" data-class="mago">Scegli Mago</button>
+    </div>
+    <div class="class-showcase" data-class="sciamano">
+      <div class="class-badge" style="background:#2980b9">⚡</div>
+      <h3>Sciamano</h3>
+      <p>Versatile e potente. Fulmini a catena, cura sé stesso e potenzia gli alleati.</p>
+      <div class="class-bar-row"><span>HP</span><div class="mini-bar"><div style="width:70%;background:#e74c3c"></div></div></div>
+      <div class="class-bar-row"><span>M.ATK</span><div class="mini-bar"><div style="width:78%;background:#f39c12"></div></div></div>
+      <div class="class-bar-row"><span>CURA</span><div class="mini-bar"><div style="width:90%;background:#27ae60"></div></div></div>
+      <div class="class-skills">
+        <span>⚡ Fulmine a Catena</span>
+        <span>💚 Onda di Cura</span>
+        <span>⛈ Tempesta di Fulmini</span>
+        <span>✨ Benedizione degli Spiriti</span>
+      </div>
+      <button class="btn-class" data-class="sciamano">Scegli Sciamano</button>
+    </div>
   </div>
+</section>
 
-  <!-- Log messaggi -->
-  <div id="log"></div>
+<!-- World Description -->
+<section id="world">
+  <h2 class="section-title">Il Mondo di Pietrascura</h2>
+  <div class="world-grid">
+    <div class="world-zone">
+      <div class="wzone-icon" style="background:#2d4a22">🌲</div>
+      <h4>Foreste Oscure</h4>
+      <p>Lupi e cinghiali per i principianti. Ideale per i primi livelli.</p>
+    </div>
+    <div class="world-zone">
+      <div class="wzone-icon" style="background:#5d4037">🏕</div>
+      <h4>Accampamento dei Banditi</h4>
+      <p>Banditi e il loro Capo per eroi di livello 5+. Ottimi drop.</p>
+    </div>
+    <div class="world-zone">
+      <div class="wzone-icon" style="background:#1b5e20">🏔</div>
+      <h4>Territorio degli Orchi</h4>
+      <p>Guerrieri e Sciamani Orchi per livello 8+. Alta ricompensa.</p>
+    </div>
+    <div class="world-zone">
+      <div class="wzone-icon" style="background:#311b92">👻</div>
+      <h4>Valle Infestata</h4>
+      <p>Spettri con attacchi di tipo magico. Richiede livello 10+.</p>
+    </div>
+    <div class="world-zone">
+      <div class="wzone-icon" style="background:#4a148c">🗿</div>
+      <h4>Lande Demoniache</h4>
+      <p>Demoni di Pietra corazzati. Per i più forti — livello 12+.</p>
+    </div>
+    <div class="world-zone">
+      <div class="wzone-icon" style="background:#b71c1c">🏚</div>
+      <h4>Dungeon</h4>
+      <p>Tana dei Banditi e Fortezza degli Orchi con boss leggendari.</p>
+    </div>
+  </div>
+</section>
 
-  <!-- Minimappa -->
-  <canvas id="minimap" width="160" height="160"></canvas>
+<!-- Footer -->
+<footer id="footer">
+  <div class="footer-content">
+    <div class="footer-brand">⚔ Regni d'Oriente</div>
+    <p>Un MMORPG originale giocabile direttamente nel browser.</p>
+    <div class="footer-links">
+      <a href="leaderboard.html">Classifiche</a>
+      <a href="game.html">Gioca</a>
+      <a href="https://github.com/FacundoTCG/AgentStudy" target="_blank">GitHub</a>
+    </div>
+  </div>
+</footer>
 
-  <!-- Comandi -->
-  <div id="controls-help">WASD/frecce: muovi · Spazio/click: attacca · 1-3: abilità · 4: pozione · Tab: bersaglio</div>
+<!-- Character Creation Modal -->
+<div id="char-create-modal" class="modal hidden">
+  <div class="modal-box">
+    <h2>Crea il tuo Personaggio</h2>
+    <div class="form-row">
+      <label>Nome</label>
+      <input type="text" id="char-name" placeholder="Il tuo nome..." maxlength="16" minlength="2">
+    </div>
+    <div class="form-row">
+      <label>Classe selezionata</label>
+      <div id="selected-class-display" class="selected-class">—</div>
+    </div>
+    <div class="modal-btns">
+      <button id="confirm-create-btn" class="btn-primary" disabled>Inizia l'Avventura</button>
+      <button id="cancel-create-btn" class="btn-secondary">Annulla</button>
+    </div>
+  </div>
 </div>
 
-<script src="js/game.js"></script>
+<script>
+(function() {
+  let selectedClass = null;
+
+  // Check for saved game
+  try {
+    const save = localStorage.getItem('ro_save');
+    if (save) {
+      const data = JSON.parse(save);
+      const btn = document.getElementById('continue-btn');
+      btn.style.display = 'inline-block';
+      btn.textContent = `▶ Continua (${data.player?.name || '?'} Lv ${data.player?.level || 1})`;
+      btn.addEventListener('click', () => {
+        window.location.href = `game.html?class=${data.player.classKey}&name=${encodeURIComponent(data.player.name)}&resume=1`;
+      });
+    }
+  } catch (_) {}
+
+  // Open modal on "start" or class button
+  document.getElementById('start-btn').addEventListener('click', () => {
+    document.getElementById('char-create-modal').classList.remove('hidden');
+  });
+  document.getElementById('play-now-btn').addEventListener('click', () => {
+    document.getElementById('char-create-modal').classList.remove('hidden');
+    document.querySelector('#hero').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // Class selection in hero buttons (not modal)
+  document.querySelectorAll('.btn-class').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedClass = btn.dataset.class;
+      const clsNames = { guerriero:'Guerriero', ninja:'Ninja', mago:'Mago Oscuro', sciamano:'Sciamano' };
+      const clsColors = { guerriero:'#c0392b', ninja:'#27ae60', mago:'#8e44ad', sciamano:'#2980b9' };
+      const icon = { guerriero:'⚔', ninja:'🗡', mago:'🔮', sciamano:'⚡' };
+      document.getElementById('selected-class-display').innerHTML =
+        `<span style="color:${clsColors[selectedClass]}">${icon[selectedClass]} ${clsNames[selectedClass]}</span>`;
+      document.getElementById('confirm-create-btn').disabled = !document.getElementById('char-name').value.trim();
+      document.getElementById('char-create-modal').classList.remove('hidden');
+    });
+  });
+
+  document.getElementById('char-name').addEventListener('input', function() {
+    document.getElementById('confirm-create-btn').disabled = !this.value.trim() || !selectedClass;
+  });
+
+  document.getElementById('confirm-create-btn').addEventListener('click', () => {
+    const name = document.getElementById('char-name').value.trim();
+    if (!name || !selectedClass) return;
+    if (name.length < 2) { alert('Il nome deve avere almeno 2 caratteri'); return; }
+    window.location.href = `game.html?class=${selectedClass}&name=${encodeURIComponent(name)}`;
+  });
+
+  document.getElementById('cancel-create-btn').addEventListener('click', () => {
+    document.getElementById('char-create-modal').classList.add('hidden');
+  });
+
+  // Smooth scroll for nav links
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+})();
+</script>
 </body>
 </html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classifiche — Regni d'Oriente</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="landing">
+
+<nav id="top-nav">
+  <a class="nav-logo" href="index.html">⚔ Regni d'Oriente</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="game.html">Gioca</a>
+    <span style="color:#d4af37;font-weight:bold">Classifiche</span>
+  </div>
+</nav>
+
+<section id="leaderboard-section" style="padding:100px 20px 60px">
+  <h1 class="section-title" style="margin-bottom:40px">🏆 Classifiche</h1>
+
+  <div class="lb-tabs">
+    <button class="lb-tab active" data-sort="level">Per Livello</button>
+    <button class="lb-tab" data-sort="kills">Per Uccisioni</button>
+    <button class="lb-tab" data-sort="gold">Per Oro</button>
+  </div>
+
+  <div class="lb-container">
+    <table class="lb-table" id="lb-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Personaggio</th>
+          <th>Classe</th>
+          <th>Livello</th>
+          <th>Uccisioni</th>
+          <th>Oro</th>
+        </tr>
+      </thead>
+      <tbody id="lb-body">
+        <tr><td colspan="6" style="text-align:center;color:#666;padding:40px">Caricamento...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer id="footer">
+  <div class="footer-content">
+    <div class="footer-brand">⚔ Regni d'Oriente</div>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="game.html">Gioca</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  const classIcons = { guerriero:'⚔', ninja:'🗡', mago:'🔮', sciamano:'⚡' };
+  const classColors = { guerriero:'#c0392b', ninja:'#27ae60', mago:'#8e44ad', sciamano:'#2980b9' };
+  let currentSort = 'level';
+  let allRows = [];
+
+  // Try to load from server; fall back to localStorage mock data
+  function loadLeaderboard() {
+    fetch('/api/leaderboard')
+      .then(r => r.json())
+      .then(data => { allRows = data.leaderboard || []; renderTable(); })
+      .catch(() => {
+        // Offline: build from localStorage save
+        const save = localStorage.getItem('ro_save');
+        if (save) {
+          try {
+            const p = JSON.parse(save).player;
+            allRows = [{ char_name: p.name, class: p.classKey, level: p.level, kills: p.kills || 0, gold: p.gold, username: 'Tu' }];
+          } catch(_) { allRows = []; }
+        }
+        renderTable();
+      });
+  }
+
+  function renderTable() {
+    const sorted = [...allRows].sort((a, b) => (b[currentSort] || 0) - (a[currentSort] || 0));
+    const tbody = document.getElementById('lb-body');
+    if (!sorted.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#666;padding:40px">Nessun dato disponibile</td></tr>';
+      return;
+    }
+    const medals = ['🥇','🥈','🥉'];
+    tbody.innerHTML = sorted.slice(0, 50).map((row, i) => `
+      <tr class="${i < 3 ? 'top-' + (i+1) : ''}">
+        <td>${medals[i] || (i + 1)}</td>
+        <td><strong>${row.char_name || row.name || '?'}</strong><br><small style="color:#666">${row.username || ''}</small></td>
+        <td style="color:${classColors[row.class] || '#aaa'}">${classIcons[row.class] || '?'} ${row.class || ''}</td>
+        <td><strong>${row.level}</strong></td>
+        <td>${(row.kills || 0).toLocaleString()}</td>
+        <td>💰 ${(row.gold || 0).toLocaleString()}</td>
+      </tr>
+    `).join('');
+  }
+
+  document.querySelectorAll('.lb-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.lb-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentSort = btn.dataset.sort;
+      renderTable();
+    });
+  });
+
+  loadLeaderboard();
+  setInterval(loadLeaderboard, 30000);
+})();
+</script>
+</body>
+</html>
