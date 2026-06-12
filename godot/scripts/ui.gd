@@ -285,11 +285,60 @@ func _on_inv_slot_press(slot_idx: int) -> void:
 	if inst == null:
 		return
 	var def := Data.ITEMS.get(inst["id"], {})
-	# Show context: equip / use / drop
+	# Show context menu
+	_show_item_context(slot_idx, inst, def)
+
+
+func _show_item_context(slot_idx: int, inst: Dictionary, def: Dictionary) -> void:
+	# Remove any existing context popup
+	var old := get_node_or_null("ItemContext")
+	if old:
+		old.queue_free()
+	var popup := PanelContainer.new()
+	popup.name = "ItemContext"
+	var sf := StyleBoxFlat.new()
+	sf.bg_color = Color(0.10, 0.06, 0.02, 0.96)
+	sf.border_color = Color(0.38, 0.23, 0.07)
+	sf.set_border_width_all(2)
+	sf.set_corner_radius_all(4)
+	popup.add_theme_stylebox_override("panel", sf)
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 2)
+	popup.add_child(vbox)
+	# Title
+	var title := _wood_label(def.get("name", "?"), 12, Color(0.85, 0.65, 0.25))
+	vbox.add_child(title)
+	vbox.add_child(_separator())
+	# Actions
 	if def.has("slot"):
-		G.equip_item(slot_idx)
-	elif def.get("kind") in ["potion", "food", "fish"]:
-		G.use_item_at(slot_idx)
+		var eq_btn := _wood_button("⚔ Equipaggia")
+		eq_btn.pressed.connect(func(): popup.queue_free(); G.equip_item(slot_idx))
+		vbox.add_child(eq_btn)
+	if def.get("kind") in ["potion", "food", "fish"]:
+		var use_btn := _wood_button("✨ Usa")
+		use_btn.pressed.connect(func(): popup.queue_free(); G.use_item_at(slot_idx))
+		vbox.add_child(use_btn)
+	var drop_btn := _wood_button("🗑 Getta")
+	drop_btn.pressed.connect(func(): popup.queue_free(); _drop_item_from_inv(slot_idx))
+	vbox.add_child(drop_btn)
+	var cancel_btn := _wood_button("✕ Annulla")
+	cancel_btn.pressed.connect(func(): popup.queue_free())
+	vbox.add_child(cancel_btn)
+	# Position near mouse
+	var mpos := get_viewport().get_mouse_position()
+	popup.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	popup.offset_left = clampf(mpos.x, 0, get_viewport_rect().size.x - 160)
+	popup.offset_top  = clampf(mpos.y, 0, get_viewport_rect().size.y - 160)
+	add_child(popup)
+
+
+func _drop_item_from_inv(slot_idx: int) -> void:
+	var inst := G.inventory[slot_idx]
+	if inst == null:
+		return
+	var def := Data.ITEMS.get(inst["id"], {})
+	G.remove_item_at(slot_idx, inst.get("qty", 1))
+	G.notification.emit("Hai gettato: %s." % def.get("name", "?"), "info")
 
 
 func _on_equip_slot_press(slot: String) -> void:
@@ -414,6 +463,33 @@ func _refresh_character() -> void:
 	inner.add_child(_wood_label(cls_data.get("name", "—") + "  Lv " + str(pd.get("level", 1)), 13, TEXT_COL))
 	inner.add_child(_wood_label("XP: %d / %d" % [pd.get("xp", 0), Data.level_xp(pd.get("level", 1))], 11, DIM_COL))
 	inner.add_child(_wood_label("Punti Abilità: %d" % pd.get("skill_pts", 0), 11, GOLD_COL))
+	# ── Stat allocation ──────────────────────────────────────────
+	var stat_pts := pd.get("stat_pts", 0)
+	var stat_col := GOLD_COL if stat_pts > 0 else DIM_COL
+	inner.add_child(_separator())
+	inner.add_child(_section_label("  ATTRIBUTI"))
+	inner.add_child(_wood_label("Punti Attributo disponibili: %d" % stat_pts, 11, stat_col))
+	var stat_defs := [
+		["str", "Forza",       "ATK +2, DIF +1 per punto", Color(0.95, 0.45, 0.25)],
+		["vit", "Vitalità",    "PV +25, DIF +1 per punto",  Color(0.35, 0.90, 0.40)],
+		["int", "Intelligenza","MATK +2, PM +15 per punto", Color(0.45, 0.55, 0.95)],
+	]
+	for sd in stat_defs:
+		var row := HBoxContainer.new()
+		var cur_val := pd.get("stat_%s" % sd[0], 0)
+		var lbl_txt := "%s: %d" % [sd[1], cur_val]
+		var stat_lbl := _wood_label(lbl_txt, 12, sd[3])
+		stat_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		stat_lbl.tooltip_text = sd[2]
+		row.add_child(stat_lbl)
+		var add_btn := _wood_button("+")
+		add_btn.custom_minimum_size = Vector2(28, 24)
+		add_btn.disabled = stat_pts <= 0
+		add_btn.pressed.connect(func():
+			G.add_stat_point(sd[0])
+			_refresh_character())
+		row.add_child(add_btn)
+		inner.add_child(row)
 	inner.add_child(_separator())
 	inner.add_child(_section_label("  ABILITÀ"))
 	for sk_id in cls_data.get("skills", []):

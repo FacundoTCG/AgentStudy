@@ -511,10 +511,48 @@ func _show_levelup_flash(lvl: int) -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(overlay)
+	# Big centered level-up text
+	var lbl := Label.new()
+	lbl.text = "LIVELLO %d!" % lvl
+	lbl.set_anchors_preset(Control.PRESET_CENTER)
+	lbl.offset_left = -200; lbl.offset_right = 200
+	lbl.offset_top  = -60;  lbl.offset_bottom = 60
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 48)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.92, 0.3))
+	lbl.add_theme_color_override("font_shadow_color", Color(0.5, 0.3, 0.0, 0.9))
+	lbl.add_theme_constant_override("shadow_offset_x", 3)
+	lbl.add_theme_constant_override("shadow_offset_y", 3)
+	lbl.modulate.a = 0.0
+	overlay.add_child(lbl)
 	var tw := create_tween()
-	tw.tween_property(overlay, "color:a", 0.35, 0.3)
-	tw.tween_property(overlay, "color:a", 0.0, 0.6)
+	tw.tween_property(overlay, "color:a", 0.35, 0.25)
+	tw.parallel().tween_property(lbl, "modulate:a", 1.0, 0.25)
+	tw.tween_interval(1.6)
+	tw.tween_property(overlay, "color:a", 0.0, 0.55)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.55)
 	tw.tween_callback(overlay.queue_free)
+
+
+func show_boss_announcement(boss_name: String) -> void:
+	var lbl := Label.new()
+	lbl.text = "⚔  %s  È APPARSO!  ⚔" % boss_name.to_upper()
+	lbl.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	lbl.offset_top = 130; lbl.offset_bottom = 170
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 22)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
+	lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.85))
+	lbl.add_theme_constant_override("shadow_offset_x", 2)
+	lbl.add_theme_constant_override("shadow_offset_y", 2)
+	lbl.modulate.a = 0.0
+	add_child(lbl)
+	var tw := create_tween()
+	tw.tween_property(lbl, "modulate:a", 1.0, 0.4)
+	tw.tween_interval(3.5)
+	tw.tween_property(lbl, "modulate:a", 0.0, 0.8)
+	tw.tween_callback(lbl.queue_free)
 
 
 func show_death_overlay(respawn_secs: float) -> void:

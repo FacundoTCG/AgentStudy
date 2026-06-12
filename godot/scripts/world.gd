@@ -744,6 +744,9 @@ func _respawn_boss(bid: String) -> void:
 	node.global_position = Vector3(wx, wy + 1.0, wz)
 	node.setup(bdata)
 	G.notification.emit("⚠ %s è ricomparso nel mondo!" % bdata["name"], "error")
+	var hud_arr := get_tree().get_nodes_in_group("hud_node")
+	if hud_arr.size() > 0 and hud_arr[0].has_method("show_boss_announcement"):
+		hud_arr[0].show_boss_announcement(bdata["name"])
 
 
 func _build_rain_system() -> void:

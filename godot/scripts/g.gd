@@ -98,6 +98,10 @@ func init_player(class_key: String, player_name: String) -> void:
 		"skill_pts"   : 0,
 		"skill_lvls"  : {},
 		"regen_bonus" : 0,
+		"stat_pts"    : 0,
+		"stat_str"    : 0,
+		"stat_vit"    : 0,
+		"stat_int"    : 0,
 	}
 	equipped = {}
 	inventory = []
@@ -295,6 +299,16 @@ func recalc_stats() -> void:
 		var md: Dictionary = Data.ITEMS[equipped["mount"]["id"]]
 		spd_pct *= md.get("speed_mult", 1.0)
 
+	# Stat point bonuses: STR→ATK+DEF, VIT→HP, INT→MATK+MP
+	var s_str := player_data.get("stat_str", 0)
+	var s_vit := player_data.get("stat_vit", 0)
+	var s_int := player_data.get("stat_int", 0)
+	atk_flat  += s_str * 2
+	def_flat  += s_str + s_vit
+	hp_flat   += s_vit * 25
+	matk_flat += s_int * 2
+	mp_flat   += s_int * 15
+
 	var old_max_hp := player_data["max_hp"]
 	var old_max_mp := player_data["max_mp"]
 
@@ -316,6 +330,19 @@ func recalc_stats() -> void:
 	player_stats_changed.emit()
 
 
+func add_stat_point(stat: String) -> void:
+	if player_data.get("stat_pts", 0) <= 0:
+		notification.emit("Nessun punto statistiche disponibile.", "error")
+		return
+	var key := "stat_%s" % stat
+	if not player_data.has(key):
+		return
+	player_data["stat_pts"] -= 1
+	player_data[key] += 1
+	recalc_stats()
+	notification.emit("+1 %s!" % stat.to_upper(), "success")
+
+
 # ─── XP / level up ────────────────────────────────────────────
 
 func gain_xp(amount: int, from_kill: bool = false) -> void:
@@ -327,6 +354,7 @@ func gain_xp(amount: int, from_kill: bool = false) -> void:
 		player_data["xp"] -= Data.level_xp(player_data["level"])
 		player_data["level"] += 1
 		player_data["skill_pts"] += 1
+		player_data["stat_pts"]  = player_data.get("stat_pts", 0) + 3
 		# Level-up stat recovery
 		recalc_stats()
 		player_data["hp"] = player_data["max_hp"]
