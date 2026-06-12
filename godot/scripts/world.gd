@@ -36,6 +36,12 @@ const RESPAWN_INTERVAL := 45.0
 var stone_respawn_timer : float = 0.0
 const STONE_RESPAWN_INTERVAL := 90.0
 
+var rain_particles  : CPUParticles3D = null
+var is_raining      : bool  = false
+var weather_timer   : float = 0.0
+const WEATHER_CHECK := 90.0   # seconds between weather rolls
+var _zone_fog_timer : float = 0.0
+
 
 func _ready() -> void:
 	_load_scenes()
@@ -54,6 +60,9 @@ func _ready() -> void:
 	# Fishing system
 	var fishing_sys := FishingScript.new()
 	add_child(fishing_sys)
+
+	# Weather
+	_build_rain_system()
 
 	# Spawn player
 	if player_scene:
@@ -79,6 +88,8 @@ func _process(delta: float) -> void:
 	if stone_respawn_timer >= STONE_RESPAWN_INTERVAL:
 		stone_respawn_timer = 0.0
 		_respawn_stones()
+	_update_weather(delta)
+	_update_zone_atmosphere(delta)
 
 
 func _respawn_stones() -> void:
@@ -678,6 +689,108 @@ func _build_dungeon_rooms() -> void:
 		exit_node.teleport_dest = entrance_world_pos + Vector3(0, 0.5, 5.0)
 		add_child(exit_node)
 		exit_node.global_position = rc + Vector3(0, 1.5, ROOM_D * 0.5 - 4.0)
+
+
+func _build_rain_system() -> void:
+	rain_particles = CPUParticles3D.new()
+	rain_particles.name = "RainParticles"
+	rain_particles.emitting = false
+	rain_particles.amount = 450
+	rain_particles.lifetime = 1.6
+	rain_particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	rain_particles.emission_box_extents = Vector3(30, 0.5, 30)
+	rain_particles.direction = Vector3(0.08, -1.0, 0.0)
+	rain_particles.gravity = Vector3(0, -22, 0)
+	rain_particles.initial_velocity_min = 14.0
+	rain_particles.initial_velocity_max = 20.0
+	rain_particles.spread = 2.0
+	rain_particles.local_coords = false
+	var drop_mesh := CapsuleMesh.new()
+	drop_mesh.radius = 0.014; drop_mesh.height = 0.22
+	var drop_mat := StandardMaterial3D.new()
+	drop_mat.albedo_color = Color(0.55, 0.65, 0.90, 0.40)
+	drop_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	drop_mesh.material = drop_mat
+	rain_particles.mesh = drop_mesh
+	add_child(rain_particles)
+
+
+func _update_weather(delta: float) -> void:
+	# Follow player
+	var pl_arr := get_tree().get_nodes_in_group("player")
+	if rain_particles and pl_arr.size() > 0:
+		var p: Node3D = pl_arr[0]
+		rain_particles.global_position = p.global_position + Vector3(0, 24, 0)
+
+	weather_timer += delta
+	if weather_timer < WEATHER_CHECK:
+		return
+	weather_timer = 0.0
+	if pl_arr.is_empty():
+		return
+	var pos2 := Vector2(pl_arr[0].global_position.x, pl_arr[0].global_position.z)
+	var zone := Data.zone_at(pos2)
+	var tier : int = zone.get("tier", 0)
+	# Rainy biomes: swamp (6), forest (2), mountain (8)
+	var rain_chance := 0.20
+	if tier in [2, 6]: rain_chance = 0.55
+	elif tier == 8:    rain_chance = 0.40
+	elif tier in [3, 4]: rain_chance = 0.12  # arid zones rarely rain
+	if randf() < rain_chance:
+		_set_rain(true)
+	else:
+		_set_rain(false)
+
+
+func _set_rain(enable: bool) -> void:
+	if is_raining == enable:
+		return
+	is_raining = enable
+	if rain_particles:
+		rain_particles.emitting = enable
+	if world_env_node:
+		world_env_node.environment.fog_density = 0.014 if enable else 0.006
+	if enable:
+		G.notification.emit("Inizia a piovere.", "info")
+	else:
+		G.notification.emit("La pioggia si ferma.", "info")
+
+
+func _update_zone_atmosphere(delta: float) -> void:
+	if world_env_node == null:
+		return
+	_zone_fog_timer += delta
+	if _zone_fog_timer < 3.0:
+		return
+	_zone_fog_timer = 0.0
+	var pl_arr := get_tree().get_nodes_in_group("player")
+	if pl_arr.is_empty():
+		return
+	var pos2 := Vector2(pl_arr[0].global_position.x, pl_arr[0].global_position.z)
+	var zone := Data.zone_at(pos2)
+	var tier : int = zone.get("tier", 0)
+	var env := world_env_node.environment
+	if is_raining:
+		return  # rain already set fog
+	match tier:
+		0:  # village
+			env.fog_density = 0.004
+			env.fog_light_color = Color(0.55, 0.50, 0.45)
+		2:  # forest — thick atmospheric fog
+			env.fog_density = 0.010
+			env.fog_light_color = Color(0.30, 0.42, 0.30)
+		5:  # valley of silence — eerie pale fog
+			env.fog_density = 0.012
+			env.fog_light_color = Color(0.45, 0.45, 0.55)
+		6:  # swamp — dense greenish murk
+			env.fog_density = 0.015
+			env.fog_light_color = Color(0.28, 0.38, 0.28)
+		8:  # mountain — thin high-altitude haze
+			env.fog_density = 0.008
+			env.fog_light_color = Color(0.60, 0.62, 0.72)
+		_:
+			env.fog_density = 0.006
+			env.fog_light_color = Color(0.50, 0.45, 0.40)
 
 
 func _add_box(pos: Vector3, size: Vector3, mat: StandardMaterial3D) -> void:

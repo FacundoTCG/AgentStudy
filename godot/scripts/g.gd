@@ -28,6 +28,11 @@ var current_zone   : Dictionary = {}
 var mount_active   := false
 var hair_item      := ""
 
+# ─── Kill streak ──────────────────────────────────────────────
+var kill_streak    : int   = 0
+var streak_timer   : float = 0.0
+const STREAK_RESET := 6.0   # seconds without a kill to reset streak
+
 # Set by startup screen before loading main scene
 var pending_class := "guerriero"
 var pending_name  := "Avventuriero"
@@ -36,7 +41,14 @@ const INV_SIZE := 45
 
 
 func _ready() -> void:
-	pass
+	set_process(true)
+
+
+func _process(delta: float) -> void:
+	if kill_streak > 0:
+		streak_timer -= delta
+		if streak_timer <= 0.0:
+			kill_streak = 0
 
 
 # ─── Player creation ──────────────────────────────────────────
@@ -283,8 +295,11 @@ func recalc_stats() -> void:
 
 # ─── XP / level up ────────────────────────────────────────────
 
-func gain_xp(amount: int) -> void:
-	player_data["xp"] += amount
+func gain_xp(amount: int, from_kill: bool = false) -> void:
+	var mult := 1.0
+	if from_kill and kill_streak >= 3:
+		mult = 1.0 + minf(kill_streak * 0.05, 1.0)   # max 2× at 20 kills
+	player_data["xp"] += int(amount * mult)
 	while player_data["xp"] >= Data.level_xp(player_data["level"]):
 		player_data["xp"] -= Data.level_xp(player_data["level"])
 		player_data["level"] += 1
@@ -404,6 +419,12 @@ func accept_quest(quest_id: String) -> void:
 
 func on_kill(mob_id: String) -> void:
 	kill_counts[mob_id] = kill_counts.get(mob_id, 0) + 1
+	# Kill streak
+	kill_streak += 1
+	streak_timer = STREAK_RESET
+	if kill_streak in [5, 10, 20]:
+		var mult_pct := int(minf(kill_streak * 5.0, 100.0))
+		notification.emit("Kill streak x%d! XP +%d%%" % [kill_streak, mult_pct], "levelup")
 	for qid in active_quests.keys():
 		var qa: Dictionary = active_quests[qid]
 		var q: Dictionary = Data.QUESTS[qid]

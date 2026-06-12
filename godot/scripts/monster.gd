@@ -374,7 +374,7 @@ func _die(killer: Node3D = null) -> void:
 		loot_given = true
 		var mob_def: Dictionary = Data.MONSTERS.get(mob_id, {})
 		# XP
-		G.gain_xp(mob_def.get("xp", level * 14))
+		G.gain_xp(mob_def.get("xp", level * 14), true)
 		# Gold
 		var gr: Array = mob_def.get("gold", [level * 2, level * 5])
 		var gold := gr[0] + randi() % maxi(1, gr[1] - gr[0])

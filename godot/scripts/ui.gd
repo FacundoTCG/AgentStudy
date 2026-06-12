@@ -188,7 +188,13 @@ func _build_inventory_panel() -> void:
 		stats_grid.add_child(lbl_v)
 	inner.add_child(stats_grid)
 	inner.add_child(_separator())
-	inner.add_child(_section_label("  INVENTARIO  (45 slot)"))
+	var inv_header := HBoxContainer.new()
+	inv_header.add_child(_section_label("  INVENTARIO  (45 slot)"))
+	var sort_btn := _wood_button("⬆ Ordina")
+	sort_btn.custom_minimum_size = Vector2(80, 22)
+	sort_btn.pressed.connect(_sort_inventory)
+	inv_header.add_child(sort_btn)
+	inner.add_child(inv_header)
 	var inv_grid := GridContainer.new()
 	inv_grid.name = "InvGrid"
 	inv_grid.columns = 6
@@ -333,6 +339,37 @@ func _item_tooltip(inst: Dictionary, def: Dictionary) -> String:
 				gem_str += "○ "
 		lines.append("Slot gemme: %s" % gem_str.strip_edges())
 	return "\n".join(lines)
+
+
+func _sort_inventory() -> void:
+	# Extract non-null items, sort by: slot/kind priority then quality then name
+	var items := []
+	for i in G.INV_SIZE:
+		if G.inventory[i] != null:
+			items.append(G.inventory[i])
+	# Sort by kind priority → quality tier → name
+	var kind_order := {"weapon": 0, "body": 1, "head": 2, "shield": 3, "boots": 4,
+		"bracelet": 5, "necklace": 6, "earring": 7, "ring": 8,
+		"mount": 9, "gem": 10, "scroll": 11, "food": 12, "potion": 13,
+		"fish": 14, "fishing_rod": 15, "material": 16, "hair": 17}
+	var quality_order := {"legendary": 0, "epic": 1, "rare": 2, "uncommon": 3, "common": 4}
+	items.sort_custom(func(a, b):
+		var da := Data.ITEMS.get(a["id"], {})
+		var db := Data.ITEMS.get(b["id"], {})
+		var ka := kind_order.get(da.get("slot", da.get("kind", "zzz")), 20)
+		var kb := kind_order.get(db.get("slot", db.get("kind", "zzz")), 20)
+		if ka != kb:
+			return ka < kb
+		var qa := quality_order.get(da.get("quality", "common"), 4)
+		var qb := quality_order.get(db.get("quality", "common"), 4)
+		if qa != qb:
+			return qa < qb
+		return da.get("name", "") < db.get("name", "")
+	)
+	for i in G.INV_SIZE:
+		G.inventory[i] = items[i] if i < items.size() else null
+	G.inventory_changed.emit()
+	G.notification.emit("Inventario ordinato!", "info")
 
 
 func _slot_emoji(slot: String) -> String:
