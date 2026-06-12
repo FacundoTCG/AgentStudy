@@ -42,6 +42,7 @@ var hp_regen_t  := 0.0
 var mp_regen_t  := 0.0
 var weapon_holder  : Node3D = null
 var mount_visual   : Node3D = null
+var pet_visual     : Node3D = null
 var active_statuses : Dictionary = {}   # sid → remaining_time
 var auto_heal_on    := true             # auto-drink HP potion when below threshold
 var auto_pot_cd     := 0.0             # cooldown between auto-pots
@@ -65,6 +66,7 @@ func _ready() -> void:
 	_update_name_label()
 	G.player_stats_changed.connect(_on_stats_changed)
 	G.level_up.connect(_on_level_up)
+	G.pet_changed.connect(_update_pet_visual)
 	# Sync HP/MP from data
 	G.player_data["hp"]    = G.player_data["max_hp"]
 	G.player_data["mp"]    = G.player_data["max_mp"]
@@ -143,6 +145,7 @@ func _physics_process(delta: float) -> void:
 	_tick_regen(delta)
 	_tick_statuses(delta)
 	_update_target_ring()
+	_update_pet_follow(delta)
 	G.tick_buffs(delta)
 
 	var pd := G.player_data
@@ -825,6 +828,76 @@ func _update_mount_visual() -> void:
 			lmi.position = Vector3(lx, -0.88, lz)
 			mount_visual.add_child(lmi)
 	add_child(mount_visual)
+
+
+func _update_pet_visual() -> void:
+	if pet_visual:
+		pet_visual.queue_free()
+		pet_visual = null
+	if G.active_pet == "":
+		return
+	var def := Data.ITEMS.get(G.active_pet, {})
+	var col : Color = def.get("color", Color(0.6, 0.45, 0.25))
+	var body_mat := StandardMaterial3D.new()
+	body_mat.albedo_color = col; body_mat.roughness = 0.75
+
+	pet_visual = Node3D.new()
+	pet_visual.name = "PetVisual"
+	# Body
+	var bm := SphereMesh.new(); bm.radius = 0.26; bm.height = 0.52
+	var bmi := MeshInstance3D.new(); bmi.mesh = bm; bmi.material_override = body_mat
+	bmi.position = Vector3(0, 0.30, 0)
+	pet_visual.add_child(bmi)
+	# Head
+	var hm := SphereMesh.new(); hm.radius = 0.16; hm.height = 0.32
+	var hmi := MeshInstance3D.new(); hmi.mesh = hm; hmi.material_override = body_mat
+	hmi.position = Vector3(0, 0.52, 0.18)
+	pet_visual.add_child(hmi)
+	# Ears
+	var ear_mat := StandardMaterial3D.new()
+	ear_mat.albedo_color = col.darkened(0.3); ear_mat.roughness = 0.8
+	for ex in [-0.09, 0.09]:
+		var em := BoxMesh.new(); em.size = Vector3(0.06, 0.12, 0.04)
+		var emi := MeshInstance3D.new(); emi.mesh = em; emi.material_override = ear_mat
+		emi.position = Vector3(ex, 0.66, 0.16)
+		pet_visual.add_child(emi)
+	# Tail
+	var tm := BoxMesh.new(); tm.size = Vector3(0.05, 0.05, 0.22)
+	var tmi := MeshInstance3D.new(); tmi.mesh = tm; tmi.material_override = ear_mat
+	tmi.position = Vector3(0, 0.34, -0.28)
+	pet_visual.add_child(tmi)
+	# Name label
+	var lbl := Label3D.new()
+	lbl.text = def.get("name", "Pet")
+	lbl.font_size = 14
+	lbl.modulate = Data.QUALITY_COLORS.get(def.get("quality", "common"), Color(0.85, 0.8, 0.7))
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.no_depth_test = true
+	lbl.position = Vector3(0, 0.95, 0)
+	pet_visual.add_child(lbl)
+
+	get_parent().add_child(pet_visual)
+	pet_visual.global_position = global_position + Vector3(1.2, 0.0, 1.2)
+
+
+func _update_pet_follow(delta: float) -> void:
+	if pet_visual == null or not is_instance_valid(pet_visual):
+		return
+	var follow_target := global_position + Vector3(1.1, 0.0, 1.1)
+	var dist := pet_visual.global_position.distance_to(follow_target)
+	# Teleport if too far behind (e.g. dopo un teletrasporto)
+	if dist > 25.0:
+		pet_visual.global_position = follow_target
+		return
+	if dist > 0.6:
+		var bob := sin(Time.get_ticks_msec() * 0.008) * 0.06
+		var goal := Vector3(follow_target.x, global_position.y + bob, follow_target.z)
+		pet_visual.global_position = pet_visual.global_position.lerp(goal, minf(6.0 * delta, 1.0))
+		# Face movement direction
+		var flat := follow_target - pet_visual.global_position
+		flat.y = 0
+		if flat.length() > 0.3:
+			pet_visual.look_at(pet_visual.global_position + flat, Vector3.UP)
 
 
 func get_stats() -> Dictionary:

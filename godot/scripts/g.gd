@@ -14,6 +14,7 @@ signal item_picked_up(item_id: String, qty: int)
 signal notification(text: String, kind: String)
 signal party_changed
 signal guild_changed
+signal pet_changed
 
 # ─── Player data ──────────────────────────────────────────────
 var player_data := {}          # stats, level, class, etc.
@@ -31,6 +32,7 @@ var current_zone   : Dictionary = {}
 var mount_active   := false
 var hair_item      := ""
 var pvp_mode       := false
+var active_pet     := ""       # item id del pet evocato ("" = nessuno)
 
 # ─── Guild ────────────────────────────────────────────────────
 var guild_name : String = ""
@@ -315,6 +317,20 @@ func recalc_stats() -> void:
 		var md: Dictionary = Data.ITEMS[equipped["mount"]["id"]]
 		spd_pct *= md.get("speed_mult", 1.0)
 
+	# Pet bonuses
+	if active_pet != "":
+		var pet_def: Dictionary = Data.ITEMS.get(active_pet, {})
+		var pet_bonus: Dictionary = pet_def.get("bonus", {})
+		for stat in pet_bonus:
+			var v: int = pet_bonus[stat]
+			match stat:
+				"atk":  atk_flat   += v
+				"matk": matk_flat  += v
+				"def":  def_flat   += v
+				"hp":   hp_flat    += v
+				"mp":   mp_flat    += v
+				"crit": bonus_crit += v
+
 	# Stat point bonuses: STR→ATK+DEF, VIT→HP, INT→MATK+MP
 	var s_str := player_data.get("stat_str", 0)
 	var s_vit := player_data.get("stat_vit", 0)
@@ -453,6 +469,18 @@ func use_item_at(inv_slot: int) -> void:
 				notification.emit("Il Pesce Abissale ti osserva in silenzio...", "info")
 			remove_item_at(inv_slot, 1)
 			player_stats_changed.emit()
+		"pet":
+			if player_data["level"] < def.get("lvl", 1):
+				notification.emit("Livello troppo basso per questo compagno!", "error")
+				return
+			if active_pet == inst["id"]:
+				active_pet = ""
+				notification.emit("%s richiamato." % def["name"], "info")
+			else:
+				active_pet = inst["id"]
+				notification.emit("%s evocato! Bonus attivi." % def["name"], "success")
+			pet_changed.emit()
+			recalc_stats()
 		"skill_book":
 			var target_class: String = def.get("class", "")
 			if target_class != "" and target_class != player_data.get("class", ""):

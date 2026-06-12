@@ -263,6 +263,19 @@ func _build_items() -> void:
 			"speed_mult": 1.25 + i * 0.078, "color": mount_colors[i],
 			"quality": _quality_for_tier(i + 1, 10), "price": 800 * (i + 1) * (i + 1)}
 
+	# Pet: 6 — seguono il giocatore e danno bonus passivi finché evocati
+	var pet_defs := [
+		["pet_cane",  "Cucciolo di Cane",  1,  {"atk": 4},                          Color(0.60, 0.45, 0.25), "common",   1500],
+		["pet_gatto", "Gatto Nero",        8,  {"crit": 3},                         Color(0.10, 0.10, 0.12), "uncommon", 6000],
+		["pet_falco", "Falco Rosso",       16, {"atk": 12, "crit": 2},              Color(0.75, 0.25, 0.12), "uncommon", 15000],
+		["pet_volpe", "Volpe a Nove Code", 26, {"matk": 22, "mp": 60},              Color(0.95, 0.55, 0.15), "rare",     40000],
+		["pet_orso",  "Orsetto Bianco",    36, {"hp": 180, "def": 16},              Color(0.92, 0.92, 0.90), "rare",     80000],
+		["pet_drago", "Cucciolo di Drago", 48, {"atk": 26, "matk": 26, "hp": 120},  Color(0.25, 0.60, 0.35), "epic",     200000],
+	]
+	for p in pet_defs:
+		ITEMS[p[0]] = {"id": p[0], "name": p[1], "kind": "pet", "lvl": p[2],
+			"bonus": p[3], "color": p[4], "quality": p[5], "price": p[6]}
+
 	# Capigliature: 18 (6 forme x 3 colori)
 	var hair_shapes := ["Corto", "Lungo", "Coda", "Cresta", "Treccia", "Rasato"]
 	var hair_colors := {"Nero": Color(0.08, 0.07, 0.07), "Castano": Color(0.35, 0.22, 0.12), "Biondo": Color(0.85, 0.72, 0.4)}
@@ -574,7 +587,9 @@ func _build_shops() -> void:
 	var mounts := []
 	for i in range(1, 11):
 		mounts.append("mount_%02d" % i)
-	SHOPS["mount_shop"] = {"name": "Cavalcature", "items": mounts}
+	for pid in ["pet_cane", "pet_gatto", "pet_falco", "pet_volpe", "pet_orso", "pet_drago"]:
+		mounts.append(pid)
+	SHOPS["mount_shop"] = {"name": "Cavalcature & Compagni", "items": mounts}
 	var hairs := []
 	for i in range(1, 19):
 		hairs.append("hair_%02d" % i)

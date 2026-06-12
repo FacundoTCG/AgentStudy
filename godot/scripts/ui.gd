@@ -320,8 +320,9 @@ func _show_item_context(slot_idx: int, inst: Dictionary, def: Dictionary) -> voi
 		var eq_btn := _wood_button("⚔ Equipaggia")
 		eq_btn.pressed.connect(func(): popup.queue_free(); G.equip_item(slot_idx))
 		vbox.add_child(eq_btn)
-	if def.get("kind") in ["potion", "food", "fish", "skill_book"]:
-		var use_btn := _wood_button("✨ Usa")
+	if def.get("kind") in ["potion", "food", "fish", "skill_book", "pet"]:
+		var use_label := "🐾 Evoca/Richiama" if def.get("kind") == "pet" else "✨ Usa"
+		var use_btn := _wood_button(use_label)
 		use_btn.pressed.connect(func(): popup.queue_free(); G.use_item_at(slot_idx))
 		vbox.add_child(use_btn)
 	var drop_btn := _wood_button("🗑 Getta")
@@ -357,7 +358,7 @@ func _item_emoji(def: Dictionary) -> String:
 		"boots": "👢", "bracelet": "📿", "necklace": "📿", "earring": "💎",
 		"ring": "💍", "gem": "💠", "mount": "🐎", "hair": "💇",
 		"potion": "🧪", "food": "🍖", "material": "📦", "scroll": "📜",
-		"fish": "🐟", "fishing_rod": "🎣", "skill_book": "📖"}
+		"fish": "🐟", "fishing_rod": "🎣", "skill_book": "📖", "pet": "🐾"}
 	return emojis.get(def.get("slot", def.get("kind", "")), "❓")
 
 
@@ -381,6 +382,13 @@ func _item_tooltip(inst: Dictionary, def: Dictionary) -> String:
 	if def.get("speed",0) > 0: stats.append("Vel +%d" % def["speed"])
 	if stats.size() > 0:
 		lines.append("  ".join(stats))
+	if def.get("kind") == "pet":
+		var bonus_names := {"atk": "ATK", "matk": "MATK", "def": "DIF", "hp": "PV", "mp": "PM", "crit": "Crit"}
+		var pet_stats := []
+		for bs in def.get("bonus", {}):
+			pet_stats.append("%s +%d" % [bonus_names.get(bs, bs), def["bonus"][bs]])
+		if pet_stats.size() > 0:
+			lines.append("🐾 Compagno: " + "  ".join(pet_stats))
 	for b in inst.get("bonuses", []):
 		lines.append("  [%s +%d]" % [b.get("label", "?"), b.get("val", 0)])
 	var gem_slots: int = inst.get("gem_slots", 0)
@@ -407,8 +415,8 @@ func _sort_inventory() -> void:
 	# Sort by kind priority → quality tier → name
 	var kind_order := {"weapon": 0, "body": 1, "head": 2, "shield": 3, "boots": 4,
 		"bracelet": 5, "necklace": 6, "earring": 7, "ring": 8,
-		"mount": 9, "gem": 10, "scroll": 11, "food": 12, "potion": 13,
-		"fish": 14, "fishing_rod": 15, "material": 16, "hair": 17}
+		"mount": 9, "pet": 10, "gem": 11, "scroll": 12, "food": 13, "potion": 14,
+		"fish": 15, "fishing_rod": 16, "material": 17, "hair": 18}
 	var quality_order := {"legendary": 0, "epic": 1, "rare": 2, "uncommon": 3, "common": 4}
 	items.sort_custom(func(a, b):
 		var da := Data.ITEMS.get(a["id"], {})
