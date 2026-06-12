@@ -40,6 +40,7 @@ const CLASS_ICONS := {
 
 
 func _ready() -> void:
+	add_to_group("hud_node")
 	G.player_stats_changed.connect(_update_hud)
 	G.combat_message.connect(_add_combat_msg)
 	G.notification.connect(_show_notif)
@@ -309,6 +310,41 @@ func _show_notif(text: String, kind: String) -> void:
 
 func _on_level_up(lvl: int) -> void:
 	_build_skill_bar()   # Rebuild in case new skills unlocked
+	_show_levelup_flash(lvl)
+
+
+func _show_levelup_flash(lvl: int) -> void:
+	var overlay := ColorRect.new()
+	overlay.color = Color(0.9, 0.8, 0.2, 0.0)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(overlay)
+	var tw := create_tween()
+	tw.tween_property(overlay, "color:a", 0.35, 0.3)
+	tw.tween_property(overlay, "color:a", 0.0, 0.6)
+	tw.tween_callback(overlay.queue_free)
+
+
+func show_death_overlay(respawn_secs: float) -> void:
+	var overlay := ColorRect.new()
+	overlay.name = "DeathOverlay"
+	overlay.color = Color(0.0, 0.0, 0.0, 0.0)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(overlay)
+	var lbl := Label.new()
+	lbl.text = "SEI CADUTO IN BATTAGLIA\nRespawn in %.0f secondi..." % respawn_secs
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+	lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	lbl.add_theme_font_size_override("font_size", 28)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	overlay.add_child(lbl)
+	var tw := create_tween()
+	tw.tween_property(overlay, "color:a", 0.7, 0.5)
+	tw.tween_interval(respawn_secs)
+	tw.tween_property(overlay, "color:a", 0.0, 0.5)
+	tw.tween_callback(overlay.queue_free)
 
 
 func _find_player() -> Node3D:

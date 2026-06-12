@@ -266,9 +266,7 @@ func _refresh_inventory() -> void:
 			if inst:
 				var def := Data.ITEMS.get(inst["id"], {})
 				btn.text = _item_emoji(def)
-				var enh_str := "+%d " % inst["enh"] if inst.get("enh", 0) > 0 else ""
-				var qty_str := " x%d" % inst["qty"] if inst.get("qty", 1) > 1 else ""
-				btn.tooltip_text = "%s%s%s" % [enh_str, def.get("name", "?"), qty_str]
+				btn.tooltip_text = _item_tooltip(inst, def)
 			else:
 				btn.text = ""
 				btn.tooltip_text = ""
@@ -297,6 +295,43 @@ func _item_emoji(def: Dictionary) -> String:
 		"ring": "💍", "gem": "💠", "mount": "🐎", "hair": "💇",
 		"potion": "🧪", "food": "🍖", "material": "📦", "scroll": "📜"}
 	return emojis.get(def.get("slot", def.get("kind", "")), "❓")
+
+
+func _item_tooltip(inst: Dictionary, def: Dictionary) -> String:
+	var lines := []
+	var enh := inst.get("enh", 0)
+	var enh_str := "+%d " % enh if enh > 0 else ""
+	var qty := inst.get("qty", 1)
+	lines.append("%s%s%s" % [enh_str, def.get("name", "?"), " x%d" % qty if qty > 1 else ""])
+	var q := def.get("quality", "common")
+	lines.append(Data.QUALITY_NAMES.get(q, q))
+	if def.get("lvl", 0) > 0:
+		lines.append("Richiede Lv %d" % def["lvl"])
+	var stats := []
+	if def.get("atk",  0) > 0: stats.append("ATK +%d" % def["atk"])
+	if def.get("matk", 0) > 0: stats.append("MATK +%d" % def["matk"])
+	if def.get("def",  0) > 0: stats.append("DIF +%d" % def["def"])
+	if def.get("hp",   0) > 0: stats.append("PV +%d" % def["hp"])
+	if def.get("mp",   0) > 0: stats.append("PM +%d" % def["mp"])
+	if def.get("crit", 0) > 0: stats.append("Crit +%d%%" % def["crit"])
+	if def.get("speed",0) > 0: stats.append("Vel +%d" % def["speed"])
+	if stats.size() > 0:
+		lines.append("  ".join(stats))
+	for b in inst.get("bonuses", []):
+		lines.append("  [%s +%d]" % [b.get("label", "?"), b.get("val", 0)])
+	var gem_slots: int = inst.get("gem_slots", 0)
+	var gems: Array = inst.get("gems", [])
+	if gem_slots > 0:
+		var gem_str := ""
+		for j in gem_slots:
+			var gid: String = gems[j] if j < gems.size() else ""
+			if gid != "":
+				var gdef := Data.ITEMS.get(gid, {})
+				gem_str += "💠%s " % gdef.get("name", "?")
+			else:
+				gem_str += "○ "
+		lines.append("Slot gemme: %s" % gem_str.strip_edges())
+	return "\n".join(lines)
 
 
 func _slot_emoji(slot: String) -> String:
@@ -490,9 +525,11 @@ func _refresh_forge() -> void:
 	for c in scroll.get_children(): c.queue_free()
 	var inner := VBoxContainer.new()
 	scroll.add_child(inner)
-	inner.add_child(_wood_label("Seleziona un oggetto equipaggiabile per potenziarlo.", 11, DIM_COL))
+
+	# ── Enhancement section ──────────────────────────────────────
+	inner.add_child(_section_label("  ▸ POTENZIAMENTO"))
+	inner.add_child(_wood_label("Potenzia equipaggiamento fino a +9.", 11, DIM_COL))
 	inner.add_child(_separator())
-	# List equippable items from inventory
 	for i in G.INV_SIZE:
 		var inst := G.inventory[i]
 		if inst == null: continue
@@ -511,6 +548,40 @@ func _refresh_forge() -> void:
 		var enh_btn := _wood_button("%d%%  %s" % [rate, cost_str])
 		enh_btn.pressed.connect(_do_enhance.bind(i))
 		row.add_child(enh_btn)
+		inner.add_child(row)
+
+	# ── Gem socketing section ─────────────────────────────────────
+	inner.add_child(_separator())
+	inner.add_child(_section_label("  ▸ INCASTONATURA GEMME"))
+	inner.add_child(_wood_label("Incastona gemme negli slot liberi degli oggetti.", 11, DIM_COL))
+	inner.add_child(_separator())
+
+	# List equipment with open gem slots
+	for eq_slot in G.equipped.keys():
+		var inst := G.equipped[eq_slot]
+		var def := Data.ITEMS.get(inst["id"], {})
+		var gem_slots: int = inst.get("gem_slots", 0)
+		if gem_slots == 0: continue
+		var gems: Array = inst.get("gems", [])
+		var free_slots := 0
+		for j in gem_slots:
+			if j >= gems.size() or gems[j] == "":
+				free_slots += 1
+		if free_slots == 0: continue
+		var row := HBoxContainer.new()
+		var lbl := _wood_label("[%d slot]  %s" % [free_slots, def.get("name","?")], 12, TEXT_COL)
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(lbl)
+		# Show available gems from inventory
+		for gi in G.INV_SIZE:
+			var gem_inst := G.inventory[gi]
+			if gem_inst == null: continue
+			var gdef := Data.ITEMS.get(gem_inst["id"], {})
+			if gdef.get("kind") != "gem": continue
+			var socket_btn := _wood_button("💠%s" % gdef.get("name","?"))
+			socket_btn.pressed.connect(_do_socket.bind(eq_slot, gi))
+			row.add_child(socket_btn)
+			break  # One gem option at a time for simplicity
 		inner.add_child(row)
 
 
@@ -544,6 +615,43 @@ func _do_enhance(inv_slot: int) -> void:
 				inst["enh"] = maxi(0, enh - 1)
 			G.notification.emit("Potenziamento fallito!", "error")
 	G.recalc_stats()
+	G.inventory_changed.emit()
+	_refresh_forge()
+
+
+func _do_socket(eq_slot: String, gem_inv_slot: int) -> void:
+	var eq_inst := G.equipped.get(eq_slot)
+	if eq_inst == null:
+		G.notification.emit("Oggetto non equipaggiato.", "error")
+		return
+	var gem_inst := G.inventory[gem_inv_slot]
+	if gem_inst == null:
+		G.notification.emit("Gemma non trovata.", "error")
+		return
+	var gem_slots: int = eq_inst.get("gem_slots", 0)
+	if gem_slots == 0:
+		G.notification.emit("Questo oggetto non ha slot per gemme.", "error")
+		return
+	if not eq_inst.has("gems"):
+		eq_inst["gems"] = []
+	# Find first empty slot
+	var placed := false
+	for j in gem_slots:
+		if j >= eq_inst["gems"].size():
+			eq_inst["gems"].append(gem_inst["id"])
+			placed = true
+			break
+		elif eq_inst["gems"][j] == "":
+			eq_inst["gems"][j] = gem_inst["id"]
+			placed = true
+			break
+	if not placed:
+		G.notification.emit("Nessuno slot libero disponibile.", "error")
+		return
+	G.remove_item_at(gem_inv_slot, 1)
+	G.recalc_stats()
+	var gdef := Data.ITEMS.get(gem_inst["id"], {})
+	G.notification.emit("%s incastonata!" % gdef.get("name", "?"), "success")
 	G.inventory_changed.emit()
 	_refresh_forge()
 

@@ -272,12 +272,35 @@ func _cast_aoe(sk: Dictionary, mult: float, uses_matk: bool) -> void:
 	var radius: float = sk.get("radius", 4.0)
 	var pd := G.player_data
 	var origin := global_position
+	_show_aoe_ring(origin, radius)
 	for body in get_tree().get_nodes_in_group("monsters"):
 		if body.global_position.distance_to(origin) <= radius and body.has_method("take_damage"):
 			var dmg := G.calc_damage(pd, body.get_stats(), mult, uses_matk)
 			body.take_damage(dmg, self)
 			if sk.has("status"):
 				body.apply_status(sk["status"], sk.get("status_dur", 2.0))
+
+
+func _show_aoe_ring(pos: Vector3, radius: float) -> void:
+	# Visual ring on ground for AoE skills
+	var cyl := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius    = radius
+	mesh.bottom_radius = radius
+	mesh.height        = 0.08
+	mesh.rings         = 1
+	cyl.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1.0, 0.85, 0.2, 0.55)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode    = BaseMaterial3D.CULL_DISABLED
+	cyl.material_override = mat
+	cyl.position = Vector3(pos.x, pos.y + 0.05, pos.z)
+	get_parent().add_child(cyl)
+	var tw := get_tree().create_tween()
+	tw.tween_property(cyl, "scale", Vector3(1.2, 1.0, 1.2), 0.25)
+	tw.tween_property(cyl, "modulate:a", 0.0, 0.35)
+	tw.tween_callback(cyl.queue_free)
 
 
 func _cast_projectile(sk: Dictionary, mult: float, uses_matk: bool) -> void:
@@ -400,7 +423,11 @@ func _die() -> void:
 	G.player_data["deaths"] += 1
 	G.player_data["gold"] = maxi(0, G.player_data["gold"] - G.player_data["gold"] / 10)
 	G.notification.emit("Sei caduto in battaglia!", "error")
-	get_tree().create_timer(2.0).timeout.connect(_respawn)
+	# Show death overlay on HUD
+	var hud_arr := get_tree().get_nodes_in_group("hud_node")
+	if hud_arr.size() > 0 and hud_arr[0].has_method("show_death_overlay"):
+		hud_arr[0].show_death_overlay(4.0)
+	get_tree().create_timer(4.0).timeout.connect(_respawn)
 
 
 func _respawn() -> void:
