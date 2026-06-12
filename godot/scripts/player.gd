@@ -133,6 +133,10 @@ func _handle_left_click(screen_pos: Vector2) -> void:
 func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
+	if G.stall_active:
+		velocity = Vector3.ZERO
+		move_and_slide()
+		return
 
 	_tick_cooldowns(delta)
 	_tick_regen(delta)
@@ -285,6 +289,21 @@ func _unhandled_input(event: InputEvent) -> void:
 	# P: toggle PvP mode
 	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
 		G.toggle_pvp()
+		get_viewport().set_input_as_handled()
+	# T: stall toggle
+	if event is InputEventKey and event.pressed and event.keycode == KEY_T:
+		if G.stall_active:
+			G.close_stall()
+		else:
+			var ui_arr := get_tree().get_nodes_in_group("ui_node")
+			if ui_arr.size() > 0:
+				ui_arr[0].call("_show_panel", "stall")
+		get_viewport().set_input_as_handled()
+	# O: guild panel
+	if event is InputEventKey and event.pressed and event.keycode == KEY_O:
+		var ui_arr := get_tree().get_nodes_in_group("ui_node")
+		if ui_arr.size() > 0:
+			ui_arr[0].call("_toggle_panel", "guild")
 		get_viewport().set_input_as_handled()
 
 
@@ -626,7 +645,9 @@ func _get_terrain_height(pos: Vector3) -> float:
 
 func _update_name_label() -> void:
 	if name_label:
-		name_label.text = "%s  Lv %d" % [G.player_data["name"], G.player_data["level"]]
+		var tag_str := G.guild_tag + " " if G.guild_tag != "" else ""
+		var pvp_str := " ⚔" if G.pvp_mode else ""
+		name_label.text = "%s%s  Lv %d%s" % [tag_str, G.player_data.get("name","?"), G.player_data.get("level",1), pvp_str]
 
 
 func _on_stats_changed() -> void:

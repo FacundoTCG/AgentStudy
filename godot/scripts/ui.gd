@@ -23,6 +23,7 @@ var alchemy_selected_gem := ""
 
 
 func _ready() -> void:
+	add_to_group("ui_node")
 	G.npc_interaction.connect(_on_npc_interact)
 	G.inventory_changed.connect(_refresh_open_panel)
 	G.quest_updated.connect(_on_quest_update)
@@ -39,6 +40,7 @@ func _input(event: InputEvent) -> void:
 		KEY_M: _toggle_panel("map")
 		KEY_H: _toggle_panel("achievements")
 		KEY_Y: _toggle_panel("party")
+		KEY_O: _toggle_panel("guild")
 
 
 # ══════════════════ PANEL FRAMEWORK ═══════════════════════════
@@ -146,6 +148,8 @@ func _build_all_panels() -> void:
 	_build_shop_panel()
 	_build_achievements_panel()
 	_build_party_panel()
+	_build_guild_panel()
+	_build_stall_panel()
 	_build_esc_menu()
 
 
@@ -1284,6 +1288,8 @@ func _refresh_open_panel(_qid: String = "") -> void:
 		"alchemy":      _refresh_alchemy()
 		"achievements": _refresh_achievements()
 		"party":        _refresh_party()
+		"guild":        _refresh_guild()
+		"stall":        _refresh_stall()
 
 
 func _build_achievements_panel() -> void:
@@ -1450,6 +1456,179 @@ func _make_party_card(m_name: String, m_class: String, m_level: int,
 	var hp_lbl := _wood_label("PV %d / %d" % [hp, max_hp], 9, DIM_COL)
 	vb.add_child(hp_lbl)
 	return row
+
+
+# ── Gilda [O] ─────────────────────────────────────────────────
+
+func _build_guild_panel() -> void:
+	var pc := _make_panel("Gilda  [O]", 380, 440)
+	panels["guild"] = pc
+	G.guild_changed.connect(func(): if current_panel == "guild": _refresh_guild())
+
+
+func _refresh_guild() -> void:
+	var pc := panels.get("guild")
+	if pc == null or not pc.visible:
+		return
+	var scroll := pc.get_node_or_null("VBox/Scroll")
+	if scroll == null:
+		return
+	for c in scroll.get_children():
+		c.queue_free()
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 8)
+	scroll.add_child(inner)
+
+	if G.guild_name == "":
+		# No guild — show creation form
+		inner.add_child(_wood_label("Non sei in nessuna gilda.", 12, DIM_COL))
+		inner.add_child(_separator())
+		inner.add_child(_section_label("  FONDA UNA GILDA  (1000 💰)"))
+		var name_input := LineEdit.new()
+		name_input.name = "GuildNameInput"
+		name_input.placeholder_text = "Nome della gilda..."
+		name_input.custom_minimum_size = Vector2(0, 30)
+		var sf := StyleBoxFlat.new()
+		sf.bg_color = Color(0.06, 0.04, 0.02, 0.9); sf.border_color = BORDER_COL
+		sf.set_border_width_all(1)
+		name_input.add_theme_stylebox_override("normal", sf)
+		name_input.add_theme_color_override("font_color", TEXT_COL)
+		name_input.add_theme_font_size_override("font_size", 13)
+		inner.add_child(name_input)
+		var create_btn := _wood_button("⚜ Fonda Gilda")
+		create_btn.pressed.connect(func():
+			var ni := inner.get_node_or_null("GuildNameInput")
+			if ni:
+				G.create_guild(ni.text)
+				_refresh_guild())
+		inner.add_child(create_btn)
+
+		inner.add_child(_separator())
+		inner.add_child(_section_label("  OPPURE UNISCITI A UNA GILDA"))
+		var sim_guilds := [["Cavalieri del Tramonto","7","[KOT]"],["Legione Oscura","12","[LGO]"],
+			["Ordine della Fenice","5","[ODF]"]]
+		for sg in sim_guilds:
+			var row := HBoxContainer.new()
+			var lbl := _wood_label("%s  %s  (%s membri)" % [sg[2], sg[0], sg[1]], 12, TEXT_COL)
+			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(lbl)
+			var join_btn := _wood_button("Entra")
+			var gname : String = sg[0]; var gtag : String = sg[2]
+			join_btn.pressed.connect(func():
+				G.guild_tag = gtag; G.guild_name = gname; G.guild_rank = "Membro"
+				G.notification.emit("Sei entrato nella gilda '%s'!" % gname, "success")
+				G.guild_changed.emit(); G.player_stats_changed.emit()
+				_refresh_guild())
+			row.add_child(join_btn)
+			inner.add_child(row)
+	else:
+		# In guild — show info
+		var tag_lbl := _wood_label(G.guild_tag + "  " + G.guild_name, 20, GOLD_COL)
+		tag_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		inner.add_child(tag_lbl)
+		inner.add_child(_wood_label("Rango: " + G.guild_rank, 13, TEXT_COL))
+		inner.add_child(_separator())
+		inner.add_child(_section_label("  MEMBRI (simulati)"))
+		var sim_members := [["Garrok", "guerriero", 28], ["Linh", "ninja", 22], ["Vex", "mago", 35]]
+		const ICONS := {"guerriero":"⚔","ninja":"🗡","mago":"🔮","sciamano":"🌿"}
+		for sm in sim_members:
+			inner.add_child(_wood_label("  %s %s  Lv%d" % [ICONS.get(sm[1],"⚔"), sm[0], sm[2]], 12, TEXT_COL))
+		inner.add_child(_separator())
+		inner.add_child(_section_label("  GUERRA DI GILDA"))
+		var war_btn := _wood_button("⚔ Dichiara Guerra  (500 💰)")
+		war_btn.pressed.connect(func():
+			if G.spend_gold(500):
+				G.notification.emit("Guerra dichiarata alla Legione Oscura!", "error")
+				G.combat_message.emit("⚔ GUERRA DI GILDA DICHIARATA!", "crit"))
+		inner.add_child(war_btn)
+		inner.add_child(_separator())
+		var leave_btn := _wood_button("Lascia la Gilda")
+		leave_btn.pressed.connect(func(): G.leave_guild(); _refresh_guild())
+		inner.add_child(leave_btn)
+
+
+# ── Stallo [T] ────────────────────────────────────────────────
+
+func _build_stall_panel() -> void:
+	var pc := _make_panel("Stallo Mercante  [T]", 400, 500)
+	panels["stall"] = pc
+
+
+func _refresh_stall() -> void:
+	var pc := panels.get("stall")
+	if pc == null or not pc.visible:
+		return
+	var scroll := pc.get_node_or_null("VBox/Scroll")
+	if scroll == null:
+		return
+	for c in scroll.get_children():
+		c.queue_free()
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 5)
+	scroll.add_child(inner)
+
+	if G.stall_active:
+		inner.add_child(_wood_label("⚑ Stallo APERTO — i giocatori possono comprare.", 12, Color(0.5, 1.0, 0.5)))
+		inner.add_child(_separator())
+		inner.add_child(_section_label("  OGGETTI IN VENDITA (%d)" % G.stall_items.size()))
+		for si in G.stall_items:
+			var inst := G.inventory[si.get("inv_slot", -1)] if si.get("inv_slot", -1) >= 0 and si.get("inv_slot", -1) < G.INV_SIZE else null
+			if inst == null:
+				continue
+			var def := Data.ITEMS.get(inst["id"], {})
+			var row := HBoxContainer.new()
+			var lbl := _wood_label(_item_emoji(def) + " " + def.get("name","?"), 12, TEXT_COL)
+			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(lbl)
+			row.add_child(_wood_label("💰 %d" % si.get("price", 0), 12, GOLD_COL))
+			inner.add_child(row)
+		inner.add_child(_separator())
+		var close_btn := _wood_button("✕ Chiudi Stallo")
+		close_btn.pressed.connect(func(): G.close_stall(); _close_panel())
+		inner.add_child(close_btn)
+	else:
+		inner.add_child(_wood_label("Imposta i prezzi e apri lo stallo.", 12, DIM_COL))
+		inner.add_child(_separator())
+		inner.add_child(_section_label("  SCEGLI OGGETTI DA VENDERE"))
+		var stall_name_input := LineEdit.new()
+		stall_name_input.name = "StallName"
+		stall_name_input.placeholder_text = "Nome stallo (es. 'Offerte di Aria')"
+		stall_name_input.custom_minimum_size = Vector2(0, 28)
+		var sf := StyleBoxFlat.new()
+		sf.bg_color = Color(0.06, 0.04, 0.02, 0.9); sf.border_color = BORDER_COL
+		sf.set_border_width_all(1)
+		stall_name_input.add_theme_stylebox_override("normal", sf)
+		stall_name_input.add_theme_color_override("font_color", TEXT_COL)
+		stall_name_input.add_theme_font_size_override("font_size", 12)
+		inner.add_child(stall_name_input)
+		inner.add_child(_separator())
+		for i in G.INV_SIZE:
+			var inst := G.inventory[i]
+			if inst == null:
+				continue
+			var def := Data.ITEMS.get(inst["id"], {})
+			var row := HBoxContainer.new()
+			var lbl := _wood_label(_item_emoji(def) + " " + def.get("name","?"), 11, TEXT_COL)
+			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(lbl)
+			var base_price := def.get("price", 10)
+			var price_lbl := _wood_label("💰%d" % base_price, 11, GOLD_COL)
+			row.add_child(price_lbl)
+			var sell_btn := _wood_button("+ Vendi")
+			sell_btn.custom_minimum_size = Vector2(58, 22)
+			var idx := i; var bp := base_price
+			sell_btn.pressed.connect(func(): G.add_stall_item(idx, bp); _refresh_stall())
+			row.add_child(sell_btn)
+			inner.add_child(row)
+		inner.add_child(_separator())
+		var open_btn := _wood_button("⚑ Apri Stallo")
+		open_btn.pressed.connect(func():
+			if G.stall_items.is_empty():
+				G.notification.emit("Aggiungi almeno un oggetto allo stallo.", "error")
+				return
+			G.open_stall()
+			_refresh_stall())
+		inner.add_child(open_btn)
 
 
 func _on_npc_interact(npc_id: String) -> void:

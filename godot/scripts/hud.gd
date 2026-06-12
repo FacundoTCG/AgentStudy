@@ -124,7 +124,8 @@ func _update_hud() -> void:
 	mp_label.text = "%d / %d" % [pd["mp"], pd["max_mp"]]
 	xp_label.text = "Lv %d" % pd["level"]
 	lv_label.text = "Lv %d" % pd["level"]
-	name_label.text = pd.get("name", "—")
+	var tag := G.guild_tag
+	name_label.text = (tag + " " if tag != "" else "") + pd.get("name", "—")
 	gold_label.text  = "◈ %s" % _fmt_gold(pd.get("gold", 0))
 	portrait.text    = CLASS_ICONS.get(pd.get("class", "guerriero"), "⚔")
 

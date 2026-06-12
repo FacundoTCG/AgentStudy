@@ -334,6 +334,22 @@ func _build_items() -> void:
 		ITEMS[f[0]] = {"id": f[0], "name": f[1], "kind": "fish",
 			"hp_restore": f[2], "quality": f[4], "price": f[3], "stack": 20}
 
+	# Dragon Eye fragments (5 pieces → legendary ring)
+	for i in range(1, 6):
+		ITEMS["occhio_drago_%d" % i] = {
+			"id": "occhio_drago_%d" % i, "name": "Frammento Occhio del Drago %d/5" % i,
+			"kind": "material", "tier": 8, "quality": "epic",
+			"price": 5000 * i, "stack": 5,
+			"desc": "Un frammento dell'Occhio del Drago. Combina tutti e 5 per ottenere il leggendario.",
+		}
+	ITEMS["occhio_drago"] = {
+		"id": "occhio_drago", "name": "Occhio del Drago",
+		"slot": "ring", "lvl": 50, "quality": "legendary",
+		"atk": 40, "matk": 40, "crit": 15, "hp": 200, "mp": 100,
+		"price": 100000, "stack": 1,
+		"desc": "L'occhio del Grande Drago. Emana un potere soprannaturale.",
+	}
+
 	# Libri di Abilità — uno per ogni skill (usabili solo dalla classe giusta)
 	var book_defs := {
 		"guerriero": ["fendente","fendente_rotante","grido_guerra","carica","spaccaossa","muro_scudo","terremoto","furia_berserker"],
@@ -466,13 +482,17 @@ func _boss_drops(z: int) -> Array:
 		{"id": "pietra_raffinazione", "chance": 0.4, "qty": [1, 2]},
 		{"id": "pergamena_benedizione", "chance": 0.15, "qty": [1, 1]},
 	]
-	# 20% chance to drop a random skill book matching zone tier
+	# 20% chance to drop a random skill book
 	var all_books := []
 	for id in ITEMS.keys():
 		if ITEMS[id].get("kind") == "skill_book":
 			all_books.append(id)
 	if all_books.size() > 0:
 		drops.append({"id": all_books[randi() % all_books.size()], "chance": 0.20})
+	# High-tier bosses drop Dragon Eye fragments
+	if t >= 6:
+		var frag_idx := clampi(t - 5, 1, 5)
+		drops.append({"id": "occhio_drago_%d" % frag_idx, "chance": 0.30, "qty": [1, 1]})
 	return drops
 
 
@@ -514,16 +534,16 @@ func _build_npcs() -> void:
 			"Cavalli, lupi, persino draghi! Tutti addestrati, parola di Rocco."],
 		["incantatrice_lyra", "Incantatrice Lyra", "Incantatrice", Vector2(85, -25), {"shop": "scroll_shop"},
 			"Pergamene di potere... maneggiale con rispetto."],
-		["maestro_khan", "Maestro Khan", "Maestro d'Armi", Vector2(-70, -40), {"skills": true, "quests": ["q06", "q07"]},
+		["maestro_khan", "Maestro Khan", "Maestro d'Armi", Vector2(-70, -40), {"skills": true, "quests": ["q06", "q07", "q13"]},
 			"La tecnica batte la forza. Allena le tue abilità, giovane."],
-		["capitano_dorn", "Capitano Dorn", "Capitano della Guardia", Vector2(15, -85), {"quests": ["q08", "q09"]},
+		["capitano_dorn", "Capitano Dorn", "Capitano della Guardia", Vector2(15, -85), {"quests": ["q08", "q09", "q15"]},
 			"I mostri premono ai confini. I Regni hanno bisogno di eroi."],
 		["nonna_mei", "Nonna Mei", "Cuoca", Vector2(-15, 90), {"shop": "food_shop", "quests": ["q10"]},
 			"Hai fame, tesoro? La mia zuppa rimette in piedi anche i morti."],
-		["thane_il_saggio", "Thane il Saggio", "Saggio", Vector2(-90, -15), {"quests": ["q11", "q12"]},
+		["thane_il_saggio", "Thane il Saggio", "Saggio", Vector2(-90, -15), {"quests": ["q11", "q12", "q16", "q18"]},
 			"I Picchi del Tramonto nascondono un male antico... e tu potresti essere la chiave."],
-		["cercatrice_mira", "Cercatrice Mira", "Esploratrice", Vector2(45, -45), {},
-			"Ho mappato ogni zona dei Regni. Chiedi pure, se ti serve la rotta."],
+		["cercatrice_mira", "Cercatrice Mira", "Esploratrice", Vector2(45, -45), {"shop": "dragon_shop", "quests": ["q14", "q17"]},
+			"Ho mappato ogni zona dei Regni. Cerchi i frammenti del Drago? Ho qualcosa."],
 	]
 	for d in defs:
 		NPCS[d[0]] = {"id": d[0], "name": d[1], "title": d[2], "pos": d[3], "services": d[4], "greeting": d[5]}
@@ -568,6 +588,12 @@ func _build_shops() -> void:
 			if ITEMS.has(bid):
 				scroll_items.append(bid)
 	SHOPS["scroll_shop"] = {"name": "Pergamene & Libri", "items": scroll_items}
+	# Dragon fragment shop (cercatrice_mira sells fragments 1-3 for gold)
+	var dragon_items := []
+	for i in range(1, 4):
+		dragon_items.append("occhio_drago_%d" % i)
+	dragon_items.append("canna_da_pesca")
+	SHOPS["dragon_shop"] = {"name": "Reliquie del Drago", "items": dragon_items}
 	SHOPS["food_shop"] = {"name": "Cucina di Nonna Mei", "items": ["cibo_01", "cibo_02", "cibo_03", "cibo_04", "cibo_05", "cibo_06"]}
 	var jwl := []
 	for i in range(1, 6):
@@ -618,6 +644,24 @@ func _build_quests() -> void:
 		["q12", "Il Signore dei Picchi", "thane_il_saggio", 55, {"kill": {"boss_dragon": 1}},
 			{"xp": 30000, "gold": 20000, "items": [["gem_topazio_g5", 1]]},
 			"L'Avatar del Drago domina i Picchi del Tramonto. Questa è la tua leggenda, eroe."],
+		["q13", "Il Khan Sanguinario", "maestro_khan", 20, {"kill": {"boss_khan": 1}},
+			{"xp": 3000, "gold": 2000, "items": [["pietra_raffinazione", 2]]},
+			"Il Gran Khan Sanguinario miete vittime. Fermalo prima che recluti un esercito."],
+		["q14", "Ossa di Mummia", "cercatrice_mira", 40, {"collect": {"mat_z7_a": 8}},
+			{"xp": 8500, "gold": 5000, "items": [["gem_smeraldo_g3", 1]]},
+			"Le sabbie cremisi nascondono ossa antiche cariche di magia. Ne ho bisogno per la ricerca."],
+		["q15", "Il Signore della Guerra", "capitano_dorn", 28, {"kill": {"boss_warlord": 1}},
+			{"xp": 5000, "gold": 3000, "items": [["pergamena_incantamento", 1]]},
+			"Gor'Mak raduna gli orchi della steppa. La battaglia si avvicina — eliminalo."],
+		["q16", "Frammento del Destino", "thane_il_saggio", 48, {"collect": {"occhio_drago_1": 1, "occhio_drago_2": 1}},
+			{"xp": 12000, "gold": 7000, "items": [["occhio_drago_3", 1]]},
+			"Due frammenti dell'Occhio del Drago sono nella tua mano. Ti dono il terzo se li porti."],
+		["q17", "Purificare la Palude", "guaritrice_elara", 33, {"kill": {"mob_z6_4": 5, "mob_z6_6": 3}},
+			{"xp": 7000, "gold": 4000, "items": [["cibo_05", 3], ["pozione_rossa_m", 5]]},
+			"La palude è infestata da idre. Riduce il loro numero prima che infettino il villaggio."],
+		["q18", "Il Lich del Silenzio", "thane_il_saggio", 35, {"kill": {"boss_lich": 1}},
+			{"xp": 8000, "gold": 5500, "items": [["gem_ametista_g3", 1]]},
+			"Il Lich dimora nella Valle del Silenzio da secoli. Solo un vero eroe può porre fine alla sua magia."],
 	]
 	for d in defs:
 		QUESTS[d[0]] = {"id": d[0], "name": d[1], "giver": d[2], "lvl": d[3],
@@ -642,6 +686,18 @@ func _build_recipes() -> void:
 				"result_id": wpn_id, "result_qty": 1,
 				"gold_cost": 800 * t,
 			})
+	# Dragon Eye combination (5 fragments → legendary ring)
+	CRAFT_RECIPES.append({
+		"name": "Forgia: Occhio del Drago",
+		"ingredients": [
+			{"id": "occhio_drago_1", "qty": 1}, {"id": "occhio_drago_2", "qty": 1},
+			{"id": "occhio_drago_3", "qty": 1}, {"id": "occhio_drago_4", "qty": 1},
+			{"id": "occhio_drago_5", "qty": 1},
+		],
+		"result_id": "occhio_drago", "result_qty": 1,
+		"gold_cost": 5000,
+	})
+
 	# Armor recipes: body armor tier 3-6 for each class
 	for cls in CLASSES.keys():
 		for t in range(2, 6):

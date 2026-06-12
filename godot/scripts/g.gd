@@ -12,6 +12,7 @@ signal mob_killed(mob_id: String, mob_name: String, xp: int, gold: int)
 signal item_dropped(item_id: String, pos: Vector3)
 signal notification(text: String, kind: String)
 signal party_changed
+signal guild_changed
 
 # ─── Player data ──────────────────────────────────────────────
 var player_data := {}          # stats, level, class, etc.
@@ -29,6 +30,15 @@ var current_zone   : Dictionary = {}
 var mount_active   := false
 var hair_item      := ""
 var pvp_mode       := false
+
+# ─── Guild ────────────────────────────────────────────────────
+var guild_name : String = ""
+var guild_tag  : String = ""
+var guild_rank : String = "Membro"
+
+# ─── Stall ────────────────────────────────────────────────────
+var stall_active : bool  = false
+var stall_items  : Array = []   # [{inv_slot, price, label}]
 
 # ─── Party ────────────────────────────────────────────────────
 var party : Array = []   # [{name, class, level, hp, max_hp, mp, max_mp}]
@@ -614,6 +624,60 @@ func toggle_pvp() -> void:
 	pvp_mode = not pvp_mode
 	notification.emit("Modalità PvP: %s" % ("ATTIVA" if pvp_mode else "DISATTIVA"), "error" if pvp_mode else "info")
 	player_stats_changed.emit()
+
+
+# ─── Guild system ──────────────────────────────────────────────
+
+func create_guild(g_name: String) -> void:
+	if guild_name != "":
+		notification.emit("Sei già in una gilda!", "error")
+		return
+	var trimmed := g_name.strip_edges()
+	if trimmed.length() < 3:
+		notification.emit("Il nome deve avere almeno 3 caratteri.", "error")
+		return
+	if not spend_gold(1000):
+		return
+	guild_name = trimmed
+	guild_tag  = "[%s]" % trimmed.substr(0, 3).to_upper()
+	guild_rank = "Fondatore"
+	notification.emit("Gilda '%s' fondata!" % guild_name, "success")
+	guild_changed.emit()
+	player_stats_changed.emit()
+
+
+func leave_guild() -> void:
+	if guild_name == "":
+		notification.emit("Non sei in nessuna gilda.", "error")
+		return
+	var old := guild_name
+	guild_name = ""; guild_tag = ""; guild_rank = "Membro"
+	notification.emit("Hai lasciato la gilda '%s'." % old, "info")
+	guild_changed.emit()
+	player_stats_changed.emit()
+
+
+# ─── Stall system ──────────────────────────────────────────────
+
+func open_stall() -> void:
+	stall_active = true
+	notification.emit("Stallo aperto! Premi T per chiuderlo.", "info")
+	player_stats_changed.emit()
+
+
+func close_stall() -> void:
+	stall_active = false
+	stall_items.clear()
+	notification.emit("Stallo chiuso.", "info")
+	player_stats_changed.emit()
+
+
+func add_stall_item(inv_slot: int, price: int) -> void:
+	if inventory[inv_slot] == null:
+		return
+	var def := Data.ITEMS.get(inventory[inv_slot]["id"], {})
+	stall_items.append({"inv_slot": inv_slot, "price": price, "label": def.get("name", "?")})
+	notification.emit("%s aggiunto allo stallo a %d 💰." % [def.get("name","?"), price], "info")
 
 
 # ─── Save / Load ──────────────────────────────────────────────
