@@ -11,6 +11,8 @@ const HEIGHT_AMP  := 32.0
 const MOB_DENSITY := 0.0025   # mob per m^2 per zona
 const STONE_PER_ZONE := 2
 
+const DungeonEntranceScript := preload("res://scripts/dungeon_entrance.gd")
+
 @onready var nav_region : NavigationRegion3D = $NavigationRegion3D
 
 var player_scene   : PackedScene = null
@@ -45,6 +47,7 @@ func _ready() -> void:
 	_spawn_world_bosses()
 	_spawn_stones()
 	_spawn_dungeon_entrances()
+	_build_dungeon_rooms()
 	_bake_nav()
 
 	# Spawn player
@@ -593,6 +596,102 @@ func _spawn_dungeon_entrances() -> void:
 		marker.position = Vector3(c2.x, py, c2.y)
 		marker.add_to_group("dungeons")
 		add_child(marker)
+
+
+func _build_dungeon_rooms() -> void:
+	var dungeon_defs := [
+		{"name": "Grotta dei Banditi",     "portal": Vector2( 400.0, -800.0), "boss": "boss_khan"},
+		{"name": "Bosco Maledetto",        "portal": Vector2(-600.0,  400.0), "boss": "boss_warlord"},
+		{"name": "Rovine di Metin",        "portal": Vector2( 900.0,  200.0), "boss": "boss_lich"},
+		{"name": "Cripta del Re Orchetto", "portal": Vector2(-300.0, -900.0), "boss": "boss_hydra"},
+		{"name": "Torre dell'Oscurità",    "portal": Vector2( 700.0,  700.0), "boss": "boss_pharaoh"},
+		{"name": "Vulcano Infernale",      "portal": Vector2(-900.0,  600.0), "boss": "boss_dragon"},
+	]
+
+	var wall_mat := StandardMaterial3D.new()
+	wall_mat.albedo_color = Color(0.30, 0.26, 0.24)
+	wall_mat.roughness = 0.92
+
+	var floor_mat := StandardMaterial3D.new()
+	floor_mat.albedo_color = Color(0.22, 0.19, 0.17)
+	floor_mat.roughness = 0.95
+
+	const ROOM_W   := 44.0
+	const ROOM_H   := 8.0
+	const ROOM_D   := 44.0
+	const ROOM_GAP := 220.0
+
+	for i in dungeon_defs.size():
+		var dd := dungeon_defs[i]
+		var rc := Vector3(2400.0 + i * ROOM_GAP, 0.0, 0.0)   # room center
+
+		# Floor
+		_add_box(rc + Vector3(0, -0.25, 0), Vector3(ROOM_W, 0.5, ROOM_D), floor_mat)
+		# Ceiling
+		_add_box(rc + Vector3(0, ROOM_H + 0.25, 0), Vector3(ROOM_W, 0.5, ROOM_D), wall_mat)
+		# North wall (-Z)
+		_add_box(rc + Vector3(0, ROOM_H * 0.5, -ROOM_D * 0.5 - 0.5), Vector3(ROOM_W, ROOM_H, 1.0), wall_mat)
+		# South wall (+Z) — doorway side
+		_add_box(rc + Vector3(0, ROOM_H * 0.5, ROOM_D * 0.5 + 0.5), Vector3(ROOM_W, ROOM_H, 1.0), wall_mat)
+		# West wall
+		_add_box(rc + Vector3(-ROOM_W * 0.5 - 0.5, ROOM_H * 0.5, 0), Vector3(1.0, ROOM_H, ROOM_D), wall_mat)
+		# East wall
+		_add_box(rc + Vector3( ROOM_W * 0.5 + 0.5, ROOM_H * 0.5, 0), Vector3(1.0, ROOM_H, ROOM_D), wall_mat)
+
+		# Torches — two OmniLights inside the room
+		for tx in [-10.0, 10.0]:
+			var tl := OmniLight3D.new()
+			tl.light_color = Color(1.0, 0.62, 0.22)
+			tl.light_energy = 2.8
+			tl.omni_range = 18.0
+			tl.shadow_enabled = false
+			tl.position = rc + Vector3(tx, 4.0, 0)
+			add_child(tl)
+
+		# Boss spawn at room center
+		if monster_scene and Data.MONSTERS.has(dd["boss"]):
+			var boss_node := monster_scene.instantiate()
+			add_child(boss_node)
+			boss_node.global_position = rc + Vector3(0, 1.0, 0)
+			boss_node.setup(Data.MONSTERS[dd["boss"]])
+
+		# Entrance trigger — placed at portal location in world
+		var p2 : Vector2 = dd["portal"]
+		var py : float   = _get_height(p2.x, p2.y)
+		var entrance_world_pos := Vector3(p2.x, py + 1.0, p2.y)
+
+		var entrance_node := DungeonEntranceScript.new()
+		entrance_node.dungeon_name  = dd["name"]
+		entrance_node.teleport_dest = rc + Vector3(0, 1.5, 0)
+		entrance_node.is_exit       = false
+		add_child(entrance_node)
+		entrance_node.global_position = entrance_world_pos
+
+		# Exit trigger — inside the room near south wall
+		var exit_node := DungeonEntranceScript.new()
+		exit_node.is_exit       = true
+		exit_node.teleport_dest = entrance_world_pos + Vector3(0, 0.5, 5.0)
+		add_child(exit_node)
+		exit_node.global_position = rc + Vector3(0, 1.5, ROOM_D * 0.5 - 4.0)
+
+
+func _add_box(pos: Vector3, size: Vector3, mat: StandardMaterial3D) -> void:
+	var bm := BoxMesh.new()
+	bm.size = size
+	var mi := MeshInstance3D.new()
+	mi.mesh = bm
+	mi.material_override = mat
+	mi.position = pos
+	add_child(mi)
+
+	var sb := StaticBody3D.new()
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = size
+	cs.shape = bs
+	sb.add_child(cs)
+	sb.position = pos
+	add_child(sb)
 
 
 func _bake_nav() -> void:
