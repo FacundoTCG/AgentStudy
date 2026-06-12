@@ -355,11 +355,42 @@ func _update_buffs_ui() -> void:
 	for c in status_row.get_children():
 		c.queue_free()
 	for b in G.buffs:
-		var lbl := Label.new()
-		lbl.text = "%s\n%.0fs" % [b.get("name", ""), b.get("remains", 0.0)]
-		lbl.add_theme_font_size_override("font_size", 9)
-		lbl.add_theme_color_override("font_color", Color(0.9, 0.75, 0.4))
-		status_row.add_child(lbl)
+		var pc := PanelContainer.new()
+		var sf := StyleBoxFlat.new()
+		sf.bg_color = Color(0.08, 0.05, 0.02, 0.85)
+		sf.border_color = Color(0.38, 0.23, 0.07)
+		sf.set_border_width_all(1); sf.set_corner_radius_all(3)
+		pc.add_theme_stylebox_override("panel", sf)
+		pc.custom_minimum_size = Vector2(52, 40)
+		var vb := VBoxContainer.new()
+		vb.add_theme_constant_override("separation", 1)
+		pc.add_child(vb)
+		var name_lbl := Label.new()
+		name_lbl.text = b.get("name", "")[:8]
+		name_lbl.add_theme_font_size_override("font_size", 8)
+		name_lbl.add_theme_color_override("font_color", Color(0.9, 0.75, 0.4))
+		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vb.add_child(name_lbl)
+		var pb := ProgressBar.new()
+		pb.min_value = 0; pb.max_value = b.get("dur", 1.0)
+		pb.value = b.get("remains", 0.0)
+		pb.custom_minimum_size = Vector2(44, 6)
+		pb.show_percentage = false
+		var pb_sf := StyleBoxFlat.new()
+		pb_sf.bg_color = Color(0.3, 0.55, 0.85)
+		pb_sf.set_corner_radius_all(2)
+		pb.add_theme_stylebox_override("fill", pb_sf)
+		var pb_bg := StyleBoxFlat.new()
+		pb_bg.bg_color = Color(0.1, 0.06, 0.03)
+		pb.add_theme_stylebox_override("background", pb_bg)
+		vb.add_child(pb)
+		var time_lbl := Label.new()
+		time_lbl.text = "%.0fs" % b.get("remains", 0.0)
+		time_lbl.add_theme_font_size_override("font_size", 8)
+		time_lbl.add_theme_color_override("font_color", Color(0.7, 0.6, 0.4))
+		time_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vb.add_child(time_lbl)
+		status_row.add_child(pc)
 
 
 # ── Combat log ────────────────────────────────────────────────

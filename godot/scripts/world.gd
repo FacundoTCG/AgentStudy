@@ -30,6 +30,8 @@ var day_time       : float = 8.0          # in-game hour 0–24
 const DAY_DURATION   := 600.0             # real seconds per full in-game day
 var respawn_timer  : float = 0.0
 const RESPAWN_INTERVAL := 45.0
+var stone_respawn_timer : float = 0.0
+const STONE_RESPAWN_INTERVAL := 90.0
 
 
 func _ready() -> void:
@@ -65,6 +67,40 @@ func _process(delta: float) -> void:
 	if respawn_timer >= RESPAWN_INTERVAL:
 		respawn_timer = 0.0
 		_respawn_zone_monsters()
+	stone_respawn_timer += delta
+	if stone_respawn_timer >= STONE_RESPAWN_INTERVAL:
+		stone_respawn_timer = 0.0
+		_respawn_stones()
+
+
+func _respawn_stones() -> void:
+	if not stone_scene:
+		return
+	var live_stones := get_tree().get_nodes_in_group("stones")
+	if live_stones.size() >= Data.ZONES.size() * STONE_PER_ZONE:
+		return  # All stones are alive
+	for zone in Data.ZONES:
+		var center : Vector2 = zone["center"]
+		var radius : float   = zone["radius"]
+		var tier   : int     = zone["tier"]
+		# Count stones in this zone
+		var zone_count := 0
+		for s in live_stones:
+			if Vector2(s.global_position.x, s.global_position.z).distance_to(center) <= radius:
+				zone_count += 1
+		if zone_count >= STONE_PER_ZONE:
+			continue
+		# Spawn replacement stone
+		var angle := randf() * TAU
+		var dist  := 0.4 * radius + randf() * 0.5 * radius
+		var wx    := center.x + cos(angle) * dist
+		var wz    := center.y + sin(angle) * dist
+		var wy    := _get_height(wx, wz)
+		var node  := stone_scene.instantiate()
+		add_child(node)
+		node.global_position = Vector3(wx, wy, wz)
+		node.setup(Data.STONE_TIERS[tier - 1], zone)
+		spawned_stones.append(node)
 
 
 func _respawn_zone_monsters() -> void:
