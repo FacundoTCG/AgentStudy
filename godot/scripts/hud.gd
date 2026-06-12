@@ -35,6 +35,7 @@ var player_node   : Node3D = null
 var minimap_dots  : Control = null
 var chat_input    : LineEdit = null
 var time_label    : Label   = null
+var _prev_zone    : String  = ""
 
 var _target_ref : Node = null
 
@@ -321,7 +322,31 @@ func _update_zone() -> void:
 		return
 	var p2 := Vector2(player_node.global_position.x, player_node.global_position.z)
 	var z := Data.zone_at(p2)
-	zone_label.text = z.get("name", "")
+	var zname := z.get("name", "")
+	zone_label.text = zname
+	if zname != _prev_zone and zname != "":
+		_prev_zone = zname
+		_show_zone_banner(zname)
+
+
+func _show_zone_banner(zone_name: String) -> void:
+	var banner := Label.new()
+	banner.text = zone_name.to_upper()
+	banner.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	banner.offset_top = 220; banner.offset_bottom = 265
+	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.add_theme_font_size_override("font_size", 26)
+	banner.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+	banner.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.7))
+	banner.add_theme_constant_override("shadow_offset_x", 2)
+	banner.add_theme_constant_override("shadow_offset_y", 2)
+	banner.modulate.a = 0.0
+	add_child(banner)
+	var tw := create_tween()
+	tw.tween_property(banner, "modulate:a", 1.0, 0.4)
+	tw.tween_interval(2.2)
+	tw.tween_property(banner, "modulate:a", 0.0, 0.7)
+	tw.tween_callback(banner.queue_free)
 
 
 # ── Buff icons ────────────────────────────────────────────────

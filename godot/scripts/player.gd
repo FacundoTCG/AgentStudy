@@ -39,6 +39,7 @@ var using_nav    := false
 
 var hp_regen_t  := 0.0
 var mp_regen_t  := 0.0
+var weapon_holder : Node3D = null
 
 
 func _ready() -> void:
@@ -53,6 +54,11 @@ func _ready() -> void:
 	# Sync HP/MP from data
 	G.player_data["hp"]    = G.player_data["max_hp"]
 	G.player_data["mp"]    = G.player_data["max_mp"]
+	# Create weapon visual holder
+	weapon_holder = Node3D.new()
+	weapon_holder.name = "WeaponHolder"
+	mesh_root.add_child(weapon_holder)
+	_update_weapon_visual()
 
 
 func _input(event: InputEvent) -> void:
@@ -488,6 +494,53 @@ func _update_name_label() -> void:
 
 func _on_stats_changed() -> void:
 	_update_name_label()
+	_update_weapon_visual()
+
+
+func _update_weapon_visual() -> void:
+	if weapon_holder == null:
+		return
+	for c in weapon_holder.get_children():
+		c.queue_free()
+	var wpn_inst := G.equipped.get("weapon")
+	if wpn_inst == null:
+		return
+	var def := Data.ITEMS.get(wpn_inst["id"], {})
+	var cls := G.player_data.get("class", "guerriero")
+	var mesh_obj : Mesh = null
+	var color := Color(0.75, 0.62, 0.38)
+	match cls:
+		"guerriero":
+			var bm := BoxMesh.new(); bm.size = Vector3(0.07, 0.95, 0.05)
+			mesh_obj = bm; color = Color(0.72, 0.58, 0.32)
+		"ninja":
+			var bm := BoxMesh.new(); bm.size = Vector3(0.05, 0.58, 0.04)
+			mesh_obj = bm; color = Color(0.55, 0.62, 0.65)
+		"mago":
+			var cm := CylinderMesh.new()
+			cm.top_radius = 0.04; cm.bottom_radius = 0.07; cm.height = 1.1
+			mesh_obj = cm; color = Color(0.55, 0.3, 0.8)
+		"sciamano":
+			var sm := SphereMesh.new(); sm.radius = 0.20; sm.height = 0.4
+			mesh_obj = sm; color = Color(0.3, 0.7, 0.55)
+	if mesh_obj == null:
+		return
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh_obj
+	var mat := StandardMaterial3D.new()
+	var enh := wpn_inst.get("enh", 0)
+	if enh >= 7:
+		mat.albedo_color = Color(0.9, 0.85, 0.2)  # gold glow for high enhance
+		mat.emission_enabled = true
+		mat.emission = Color(1.0, 0.9, 0.3) * 0.4
+	elif enh >= 4:
+		mat.albedo_color = Color(0.7, 0.75, 0.85)  # silver glow
+	else:
+		mat.albedo_color = color
+	mat.metallic = 0.55; mat.roughness = 0.35
+	mi.material_override = mat
+	mi.position = Vector3(0.4, 0.86, 0.0)
+	weapon_holder.add_child(mi)
 
 
 func get_stats() -> Dictionary:
