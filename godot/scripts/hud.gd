@@ -48,6 +48,9 @@ var _damage_flash_overlay : ColorRect = null
 var _status_tint_overlay  : ColorRect = null
 var _quest_tracker        : Control   = null
 var _sprint_label         : Label     = null
+var _party_frame_root     : Control   = null
+var _boss_bar_panel       : Control   = null
+var _pvp_label            : Label     = null
 
 func _ready() -> void:
 	add_to_group("hud_node")
@@ -73,8 +76,12 @@ func _ready() -> void:
 	_build_chat_input()
 	_build_time_label()
 	_build_quest_tracker()
+	_build_party_frames()
+	_build_boss_bar()
+	_build_pvp_indicator()
 	G.quest_updated.connect(func(_qid): _update_quest_tracker())
 	G.player_stats_changed.connect(func(): _update_quest_tracker())
+	G.party_changed.connect(func(): _rebuild_party_ui())
 	# Boss kill announcements in chat
 	G.mob_killed.connect(func(mid, mname, xp, gold):
 		var def := Data.MONSTERS.get(mid, {})
@@ -91,6 +98,8 @@ func _process(delta: float) -> void:
 	_update_time_label()
 	_update_status_tint()
 	_update_sprint_indicator()
+	_update_party_frames()
+	_update_boss_bar()
 	# Hide chat input if player pressed Escape
 	if chat_input and chat_input.has_focus() and Input.is_action_just_pressed("ui_cancel"):
 		chat_input.visible = false
@@ -822,3 +831,176 @@ func _short_name(goal_type: String, key: String) -> String:
 	if goal_type == "collect":
 		return Data.ITEMS.get(key, {}).get("name", key)
 	return key
+
+
+func _wood_label(text: String, size: int = 12, color: Color = Color(0.92, 0.84, 0.70)) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_color_override("font_color", color)
+	return l
+
+
+# ── Party frames (left side) ──────────────────────────────────
+
+func _build_party_frames() -> void:
+	_party_frame_root = VBoxContainer.new()
+	_party_frame_root.name = "PartyFrames"
+	_party_frame_root.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_party_frame_root.offset_left   = 8
+	_party_frame_root.offset_top    = 162
+	_party_frame_root.offset_right  = 226
+	_party_frame_root.offset_bottom = 500
+	_party_frame_root.add_theme_constant_override("separation", 4)
+	_party_frame_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_party_frame_root)
+
+
+func _rebuild_party_ui() -> void:
+	if _party_frame_root == null:
+		return
+	for c in _party_frame_root.get_children():
+		c.queue_free()
+	for m in G.party:
+		_party_frame_root.add_child(_make_party_member_frame(m))
+
+
+func _make_party_member_frame(m: Dictionary) -> Control:
+	var pc := PanelContainer.new()
+	pc.custom_minimum_size = Vector2(208, 50)
+	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sf := StyleBoxFlat.new()
+	sf.bg_color = Color(0.07, 0.04, 0.01, 0.84)
+	sf.border_color = Color(0.35, 0.22, 0.06, 0.88)
+	sf.set_border_width_all(1); sf.set_corner_radius_all(3)
+	pc.add_theme_stylebox_override("panel", sf)
+	var vb := VBoxContainer.new()
+	vb.name = "VBox"
+	vb.add_theme_constant_override("separation", 2)
+	vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pc.add_child(vb)
+	const ICONS := {"guerriero": "⚔", "ninja": "🗡", "mago": "🔮", "sciamano": "🌿"}
+	var name_lbl := Label.new()
+	name_lbl.text = "%s %s  Lv%d" % [ICONS.get(m.get("class","guerriero"),"⚔"), m.get("name","?"), m.get("level",1)]
+	name_lbl.add_theme_font_size_override("font_size", 11)
+	name_lbl.add_theme_color_override("font_color", Color(0.85, 0.72, 0.45))
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vb.add_child(name_lbl)
+	# HP bar
+	var hp_bar := ProgressBar.new()
+	hp_bar.name = "HPBar"
+	hp_bar.min_value = 0; hp_bar.max_value = m.get("max_hp", 100); hp_bar.value = m.get("hp", 100)
+	hp_bar.custom_minimum_size = Vector2(195, 9); hp_bar.show_percentage = false
+	var fill_sf := StyleBoxFlat.new(); fill_sf.bg_color = Color(0.78, 0.14, 0.12); fill_sf.set_corner_radius_all(2)
+	hp_bar.add_theme_stylebox_override("fill", fill_sf)
+	var bg_sf := StyleBoxFlat.new(); bg_sf.bg_color = Color(0.06, 0.03, 0.01)
+	hp_bar.add_theme_stylebox_override("background", bg_sf)
+	hp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vb.add_child(hp_bar)
+	# MP bar
+	var mp_bar := ProgressBar.new()
+	mp_bar.name = "MPBar"
+	mp_bar.min_value = 0; mp_bar.max_value = m.get("max_mp", 50); mp_bar.value = m.get("mp", 50)
+	mp_bar.custom_minimum_size = Vector2(195, 6); mp_bar.show_percentage = false
+	var mfill := StyleBoxFlat.new(); mfill.bg_color = Color(0.18, 0.35, 0.80); mfill.set_corner_radius_all(2)
+	mp_bar.add_theme_stylebox_override("fill", mfill)
+	mp_bar.add_theme_stylebox_override("background", bg_sf.duplicate())
+	mp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vb.add_child(mp_bar)
+	return pc
+
+
+func _update_party_frames() -> void:
+	if _party_frame_root == null:
+		return
+	var frames := _party_frame_root.get_children()
+	for i in mini(frames.size(), G.party.size()):
+		var m : Dictionary = G.party[i]
+		var vb := frames[i].get_node_or_null("VBox")
+		if vb == null:
+			continue
+		var hp_b : ProgressBar = vb.get_node_or_null("HPBar")
+		var mp_b : ProgressBar = vb.get_node_or_null("MPBar")
+		if hp_b:
+			hp_b.max_value = m.get("max_hp", 100); hp_b.value = m.get("hp", 100)
+		if mp_b:
+			mp_b.max_value = m.get("max_mp", 50);  mp_b.value  = m.get("mp",  50)
+
+
+# ── Boss HP bar (top center) ──────────────────────────────────
+
+func _build_boss_bar() -> void:
+	_boss_bar_panel = PanelContainer.new()
+	_boss_bar_panel.name = "BossBar"
+	_boss_bar_panel.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_boss_bar_panel.offset_top    = 70
+	_boss_bar_panel.offset_bottom = 106
+	_boss_bar_panel.offset_left   = 200
+	_boss_bar_panel.offset_right  = -200
+	var sf := StyleBoxFlat.new()
+	sf.bg_color = Color(0.07, 0.02, 0.01, 0.92)
+	sf.border_color = Color(0.70, 0.12, 0.08); sf.set_border_width_all(2); sf.set_corner_radius_all(4)
+	_boss_bar_panel.add_theme_stylebox_override("panel", sf)
+	var vb := VBoxContainer.new(); vb.name = "VBox"; vb.add_theme_constant_override("separation", 2)
+	_boss_bar_panel.add_child(vb)
+	var name_lbl := Label.new()
+	name_lbl.name = "BossName"; name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_lbl.add_theme_font_size_override("font_size", 13)
+	name_lbl.add_theme_color_override("font_color", Color(1.0, 0.42, 0.30))
+	vb.add_child(name_lbl)
+	var bar := ProgressBar.new()
+	bar.name = "BossHPBar"; bar.show_percentage = false; bar.custom_minimum_size = Vector2(0, 14)
+	var fill_sf := StyleBoxFlat.new(); fill_sf.bg_color = Color(0.75, 0.08, 0.06); fill_sf.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override("fill", fill_sf)
+	var bg_sf := StyleBoxFlat.new(); bg_sf.bg_color = Color(0.05, 0.01, 0.01)
+	bar.add_theme_stylebox_override("background", bg_sf)
+	vb.add_child(bar)
+	_boss_bar_panel.visible = false
+	add_child(_boss_bar_panel)
+
+
+func _update_boss_bar() -> void:
+	if _boss_bar_panel == null:
+		return
+	if player_node == null:
+		player_node = _find_player()
+	var t : Node3D = player_node.target_mob if player_node != null and "target_mob" in player_node else null
+	var is_boss := t != null and is_instance_valid(t) and t.get("is_boss") == true
+	_boss_bar_panel.visible = is_boss
+	if not is_boss:
+		return
+	var s := t.get_stats() if t.has_method("get_stats") else {}
+	var vb := _boss_bar_panel.get_node_or_null("VBox")
+	if vb == null:
+		return
+	var name_lbl : Label = vb.get_node_or_null("BossName")
+	var bar : ProgressBar = vb.get_node_or_null("BossHPBar")
+	if name_lbl:
+		name_lbl.text = "⚔  %s  ⚔" % (t.mob_name if "mob_name" in t else "?")
+	if bar:
+		bar.max_value = maxi(1, s.get("max_hp", 100))
+		bar.value     = s.get("hp", 0)
+
+
+# ── PvP indicator ─────────────────────────────────────────────
+
+func _build_pvp_indicator() -> void:
+	_pvp_label = Label.new()
+	_pvp_label.text = "⚔ PvP"
+	_pvp_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_pvp_label.anchor_left = 1.0; _pvp_label.anchor_right  = 1.0
+	_pvp_label.anchor_top  = 1.0; _pvp_label.anchor_bottom = 1.0
+	_pvp_label.offset_left   = -90; _pvp_label.offset_right  = -6
+	_pvp_label.offset_top    = -160; _pvp_label.offset_bottom = -140
+	_pvp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_pvp_label.add_theme_font_size_override("font_size", 13)
+	_pvp_label.add_theme_color_override("font_color", Color(1.0, 0.22, 0.18))
+	_pvp_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	_pvp_label.add_theme_constant_override("shadow_offset_x", 1)
+	_pvp_label.add_theme_constant_override("shadow_offset_y", 1)
+	_pvp_label.visible = false
+	_pvp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_pvp_label)
+	G.player_stats_changed.connect(func():
+		if _pvp_label:
+			_pvp_label.visible = G.pvp_mode)

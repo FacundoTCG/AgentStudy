@@ -282,6 +282,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if fish_arr.size() > 0:
 			fish_arr[0].handle_input()
 		get_viewport().set_input_as_handled()
+	# P: toggle PvP mode
+	if event is InputEventKey and event.pressed and event.keycode == KEY_P:
+		G.toggle_pvp()
+		get_viewport().set_input_as_handled()
 
 
 func use_skill(index: int) -> void:

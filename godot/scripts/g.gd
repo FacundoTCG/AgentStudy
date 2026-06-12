@@ -11,6 +11,7 @@ signal level_up(new_level: int)
 signal mob_killed(mob_id: String, mob_name: String, xp: int, gold: int)
 signal item_dropped(item_id: String, pos: Vector3)
 signal notification(text: String, kind: String)
+signal party_changed
 
 # ─── Player data ──────────────────────────────────────────────
 var player_data := {}          # stats, level, class, etc.
@@ -27,6 +28,10 @@ var kill_counts    := {}       # mob_id → int
 var current_zone   : Dictionary = {}
 var mount_active   := false
 var hair_item      := ""
+var pvp_mode       := false
+
+# ─── Party ────────────────────────────────────────────────────
+var party : Array = []   # [{name, class, level, hp, max_hp, mp, max_mp}]
 
 # ─── Kill streak ──────────────────────────────────────────────
 var kill_streak    : int   = 0
@@ -577,6 +582,38 @@ func turn_in_quest(quest_id: String) -> void:
 	done_quests.append(quest_id)
 	notification.emit("Missione completata: %s!" % q["name"], "success")
 	quest_updated.emit(quest_id)
+
+
+# ─── Party system ─────────────────────────────────────────────
+
+func invite_party_member(m_name: String, m_class: String, m_level: int) -> void:
+	if party.size() >= 3:
+		notification.emit("Il gruppo è pieno (max 4 totali).", "error")
+		return
+	var cls := Data.CLASSES.get(m_class, Data.CLASSES["guerriero"])
+	var b   := cls.get("base", {})
+	var gro := cls.get("growth", {})
+	var hp := b.get("hp", 200) + gro.get("hp", 20) * (m_level - 1)
+	var mp := b.get("mp", 80)  + gro.get("mp", 10) * (m_level - 1)
+	party.append({"name": m_name, "class": m_class, "level": m_level,
+		"hp": hp, "max_hp": hp, "mp": mp, "max_mp": mp})
+	notification.emit("%s si è unito al gruppo!" % m_name, "success")
+	party_changed.emit()
+
+
+func remove_from_party(index: int) -> void:
+	if index < 0 or index >= party.size():
+		return
+	var m_name := party[index].get("name", "?")
+	party.remove_at(index)
+	notification.emit("%s ha lasciato il gruppo." % m_name, "info")
+	party_changed.emit()
+
+
+func toggle_pvp() -> void:
+	pvp_mode = not pvp_mode
+	notification.emit("Modalità PvP: %s" % ("ATTIVA" if pvp_mode else "DISATTIVA"), "error" if pvp_mode else "info")
+	player_stats_changed.emit()
 
 
 # ─── Save / Load ──────────────────────────────────────────────

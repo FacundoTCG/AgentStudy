@@ -45,6 +45,13 @@ var _zone_fog_timer : float = 0.0
 var dead_bosses     : Dictionary = {}   # boss_id → seconds until respawn
 const BOSS_RESPAWN_TIME := 300.0        # 5 minutes
 
+var event_timer        : float = 0.0
+const EVENT_INTERVAL   := 540.0         # 9 minutes between world events
+var active_event_mobs  : Array  = []    # mobs spawned by current event
+var event_active       : bool   = false
+const EVENT_DURATION   := 180.0
+var event_remaining    : float  = 0.0
+
 
 func _ready() -> void:
 	_load_scenes()
@@ -98,6 +105,7 @@ func _process(delta: float) -> void:
 	_update_weather(delta)
 	_update_zone_atmosphere(delta)
 	_tick_boss_respawns(delta)
+	_tick_world_event(delta)
 
 
 func _respawn_stones() -> void:
@@ -1020,6 +1028,70 @@ func _add_box(pos: Vector3, size: Vector3, mat: StandardMaterial3D) -> void:
 	sb.add_child(cs)
 	sb.position = pos
 	add_child(sb)
+
+
+func _tick_world_event(delta: float) -> void:
+	if event_active:
+		event_remaining -= delta
+		if event_remaining <= 0.0:
+			event_active = false
+			# Despawn surviving event mobs
+			for m in active_event_mobs:
+				if is_instance_valid(m):
+					m.queue_free()
+			active_event_mobs.clear()
+			G.notification.emit("L'invasione è terminata.", "info")
+		return
+
+	event_timer += delta
+	if event_timer < EVENT_INTERVAL:
+		return
+	event_timer = 0.0
+
+	# Pick a random non-village zone
+	var eligible := Data.ZONES.filter(func(z): return z.get("tier", 0) >= 1)
+	if eligible.is_empty() or not monster_scene:
+		return
+	var zone : Dictionary = eligible[randi() % eligible.size()]
+	var z_name : String = zone.get("name", "Zona sconosciuta")
+	var tier   : int    = zone.get("tier", 1)
+	var center : Vector2 = zone["center"]
+	var radius : float   = zone["radius"]
+
+	event_active    = true
+	event_remaining = EVENT_DURATION
+	active_event_mobs.clear()
+
+	# Spawn 8–12 elite mobs in the zone with boosted stats
+	var count := 8 + randi() % 5
+	for _i in count:
+		var angle := randf() * TAU
+		var dist  := sqrt(randf()) * radius * 0.8
+		var wx    := center.x + cos(angle) * dist
+		var wz    := center.y + sin(angle) * dist
+		var wy    := _get_height(wx, wz)
+		if wy < 0.2:
+			continue
+		var mob_id := "mob_z%d_%d" % [tier, randi() % 8]
+		if not Data.MONSTERS.has(mob_id):
+			continue
+		var base_def : Dictionary = Data.MONSTERS[mob_id].duplicate(true)
+		# Boost stats 1.5×
+		for stat in ["hp", "hp_max", "atk", "def", "xp", "gold"]:
+			if base_def.has(stat):
+				base_def[stat] = int(base_def[stat] * 1.5)
+		base_def["name"] = "★ " + base_def.get("name", "Invasore")
+		var node := monster_scene.instantiate()
+		add_child(node)
+		node.global_position = Vector3(wx, wy + 0.5, wz)
+		node.setup(base_def)
+		active_event_mobs.append(node)
+
+	# HUD announcement
+	var hud_arr := get_tree().get_nodes_in_group("hud_node")
+	if hud_arr.size() > 0 and hud_arr[0].has_method("show_boss_announcement"):
+		hud_arr[0].show_boss_announcement("⚔ INVASIONE: %s!" % z_name)
+	G.notification.emit("⚔ Invasione a %s! Elimina i nemici!" % z_name, "error")
 
 
 func _bake_nav() -> void:

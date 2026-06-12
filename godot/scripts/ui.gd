@@ -38,6 +38,7 @@ func _input(event: InputEvent) -> void:
 		KEY_J: _toggle_panel("quests")
 		KEY_M: _toggle_panel("map")
 		KEY_H: _toggle_panel("achievements")
+		KEY_Y: _toggle_panel("party")
 
 
 # ══════════════════ PANEL FRAMEWORK ═══════════════════════════
@@ -144,6 +145,7 @@ func _build_all_panels() -> void:
 	_build_dialogue()
 	_build_shop_panel()
 	_build_achievements_panel()
+	_build_party_panel()
 	_build_esc_menu()
 
 
@@ -1281,6 +1283,7 @@ func _refresh_open_panel(_qid: String = "") -> void:
 		"forge":        _refresh_forge()
 		"alchemy":      _refresh_alchemy()
 		"achievements": _refresh_achievements()
+		"party":        _refresh_party()
 
 
 func _build_achievements_panel() -> void:
@@ -1333,6 +1336,120 @@ func _refresh_achievements() -> void:
 		vb.add_child(_wood_label(rwd_txt, 9, Color(0.55, 0.85, 0.55) if completed else DIM_COL))
 		row.add_child(hb)
 		inner.add_child(row)
+
+
+# ── Gruppo [Y] ────────────────────────────────────────────────
+
+func _build_party_panel() -> void:
+	var pc := _make_panel("Gruppo  [Y]", 360, 440)
+	panels["party"] = pc
+	G.party_changed.connect(func(): if current_panel == "party": _refresh_party())
+
+
+func _refresh_party() -> void:
+	var pc := panels.get("party")
+	if pc == null or not pc.visible:
+		return
+	var scroll := pc.get_node_or_null("VBox/Scroll")
+	if scroll == null:
+		return
+	for c in scroll.get_children():
+		c.queue_free()
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 6)
+	scroll.add_child(inner)
+
+	# Player card (always shown at top)
+	var pd := G.player_data
+	inner.add_child(_section_label("  LEADER"))
+	var player_row := _make_party_card(pd.get("name","?"), pd.get("class","guerriero"),
+		pd.get("level",1), pd.get("hp",0), pd.get("max_hp",1),
+		pd.get("mp",0), pd.get("max_mp",1), false)
+	inner.add_child(player_row)
+	inner.add_child(_separator())
+	inner.add_child(_section_label("  MEMBRI  (%d/3)" % G.party.size()))
+
+	for i in G.party.size():
+		var m : Dictionary = G.party[i]
+		var card := _make_party_card(m.get("name","?"), m.get("class","guerriero"),
+			m.get("level",1), m.get("hp",0), m.get("max_hp",1),
+			m.get("mp",0), m.get("max_mp",1), true, i)
+		inner.add_child(card)
+
+	inner.add_child(_separator())
+	# Invite presets (simulated NPCs that can join)
+	inner.add_child(_section_label("  INVITA AVVENTURIERO"))
+	var presets := [
+		["Aria", "ninja",    8],
+		["Garron", "guerriero", 6],
+		["Lyra", "mago",    10],
+	]
+	for pr in presets:
+		var already_in := false
+		for m in G.party:
+			if m.get("name") == pr[0]:
+				already_in = true
+				break
+		if already_in or G.party.size() >= 3:
+			continue
+		var row := HBoxContainer.new()
+		const ICONS := {"guerriero":"⚔","ninja":"🗡","mago":"🔮","sciamano":"🌿"}
+		var lbl := _wood_label("%s %s  Lv%d" % [ICONS.get(pr[1],"⚔"), pr[0], pr[2]], 12, TEXT_COL)
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(lbl)
+		var inv_btn := _wood_button("Invita")
+		var pname : String = pr[0]; var pcls : String = pr[1]; var plvl : int = pr[2]
+		inv_btn.pressed.connect(func(): G.invite_party_member(pname, pcls, plvl))
+		row.add_child(inv_btn)
+		inner.add_child(row)
+
+	# PvP toggle
+	inner.add_child(_separator())
+	var pvp_row := HBoxContainer.new()
+	var pvp_lbl := _wood_label("Modalità PvP:", 12, TEXT_COL)
+	pvp_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pvp_row.add_child(pvp_lbl)
+	var pvp_state := "ATTIVA" if G.pvp_mode else "DISATTIVA"
+	var pvp_btn := _wood_button("[P] %s" % pvp_state)
+	pvp_btn.pressed.connect(func(): G.toggle_pvp(); _refresh_party())
+	pvp_row.add_child(pvp_btn)
+	inner.add_child(pvp_row)
+
+
+func _make_party_card(m_name: String, m_class: String, m_level: int,
+		hp: int, max_hp: int, mp: int, max_mp: int,
+		can_kick: bool, index: int = -1) -> Control:
+	var row := PanelContainer.new()
+	var rsf := StyleBoxFlat.new()
+	rsf.bg_color = Color(0.07, 0.04, 0.01, 0.85)
+	rsf.border_color = BORDER_COL; rsf.set_border_width_all(1); rsf.set_corner_radius_all(3)
+	row.add_theme_stylebox_override("panel", rsf)
+	var vb := VBoxContainer.new(); vb.add_theme_constant_override("separation", 2)
+	row.add_child(vb)
+	const ICONS := {"guerriero":"⚔","ninja":"🗡","mago":"🔮","sciamano":"🌿"}
+	var header_row := HBoxContainer.new()
+	var name_lbl := _wood_label("%s %s  Lv%d" % [ICONS.get(m_class,"⚔"), m_name, m_level], 12, GOLD_COL)
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_row.add_child(name_lbl)
+	if can_kick:
+		var kick_btn := _wood_button("✕")
+		kick_btn.custom_minimum_size = Vector2(24, 20)
+		var idx := index
+		kick_btn.pressed.connect(func(): G.remove_from_party(idx))
+		header_row.add_child(kick_btn)
+	vb.add_child(header_row)
+	# HP bar
+	var hp_bar := ProgressBar.new()
+	hp_bar.min_value = 0; hp_bar.max_value = maxi(1, max_hp); hp_bar.value = hp
+	hp_bar.custom_minimum_size = Vector2(0, 9); hp_bar.show_percentage = false
+	var hp_sf := StyleBoxFlat.new(); hp_sf.bg_color = Color(0.78, 0.14, 0.12); hp_sf.set_corner_radius_all(2)
+	hp_bar.add_theme_stylebox_override("fill", hp_sf)
+	var bg_sf := StyleBoxFlat.new(); bg_sf.bg_color = Color(0.05, 0.02, 0.01)
+	hp_bar.add_theme_stylebox_override("background", bg_sf)
+	vb.add_child(hp_bar)
+	var hp_lbl := _wood_label("PV %d / %d" % [hp, max_hp], 9, DIM_COL)
+	vb.add_child(hp_lbl)
+	return row
 
 
 func _on_npc_interact(npc_id: String) -> void:
