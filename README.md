@@ -58,22 +58,28 @@ regni-doriente/
 
 ### Gioco
 - **Motore 3D** — Three.js, vista in terza persona, camera rotante, fog, ombre
-- **4 Classi** — Guerriero, Ninja, Mago Oscuro, Sciamano — ognuna con 4 abilità uniche
-- **16 Abilità** — AoE, multi-hit, scatti, buff, scudi, cure, fulmini a catena, veleno, esecuzione, meteorite...
+- **4 Classi** — Guerriero, Ninja, Mago Oscuro, Sciamano — ognuna con **8 abilità** potenziabili (Lv 1-10 con punti abilità)
+- **32 Abilità** — AoE, multi-hit, scatti, buff, scudi, cure, fulmini a catena, veleno, esecuzione, meteorite...
 - **Combattimento real-time** — attacchi normali, critici, status (veleno, stun, rallentamento)
-- **12+ Mostri** — AI per tipo (basic, pack, ranged\_kite, aggressive, tank, boss)
-- **2 Dungeon** — Tana dei Banditi (lv6+) e Fortezza degli Orchi (lv11+), boss con fasi multiple
-- **Pietre Demoniache** — evocano mostri finché non vengono distrutte
+- **81 Mostri** — 64 mob in 8 zone a tier crescente + 6 boss di zona + boss dei dungeon; AI per ruolo (minion, soldier, ranged_kite, elite/pack, champion/boss)
+- **2 Dungeon** — Tana dei Banditi (lv6+) e Fortezza degli Orchi (lv11+)
+- **Pietre Demoniache a 8 livelli** — da Pietra I (lv4) a Pietra VIII (lv54), evocano i mostri della loro zona
 
 ### Progressione
-- **20 Livelli** — curva XP `100 × lvl^1.7`
-- **40+ Oggetti** — 5 qualità (Comune/Non-comune/Raro/Epico/Leggendario)
-- **Inventario 30 slot** — equipaggiamento (arma, petto, anello, collana)
-- **4 Missioni** — obiettivi kill e collect, ricompense in XP/oro/oggetti
+- **Livelli illimitati** — curva XP `100 × lvl^1.7`, +1 punto abilità a livello
+- **298 Oggetti** — 76 armi, 93 armature, 30 gioielli, 25 gemme, 10 cavalcature, 18 capigliature, cibi, pergamene, materiali — 5 qualità
+- **9 Slot equipaggiamento** — arma, corpo, testa, scudo, stivali, bracciale, collana, orecchini, anello
+- **Potenziamento +0/+9** — alla Forgia: costi in oro, Pietre di Raffinazione da +4, Pergamena della Benedizione contro i fallimenti
+- **Bonus casuali** — ogni oggetto equipaggiabile droppa con 0-3 bonus (21 tipi); rerollabili con la Pergamena dell'Incantamento
+- **Alchimia** — 5 gemme × 5 gradi: combina 3 uguali per il grado successivo, incastonale negli alloggiamenti (0-3 per qualità)
+- **Cavalcature** — 10 mount (+25% → +95% velocità), tasto R per evocarle
+- **Capigliature** — 18 acconciature dal barbiere
+- **Inventario 45 slot** — con istanze uniche per gli equipaggiabili (+enh, bonus, gemme)
+- **12 Missioni** — kill, collect e obiettivi evento, ricompense in XP/oro/oggetti
 
 ### Online
-- **5 NPC** — con dialoghi, negozi, servizi (guarigione, osteria, quest)
-- **3 Negozi** — fabbro, mercante, guaritrice
+- **13 NPC** — fabbro, mercante, guaritrice, oste, barbiera, alchimista, stalliere, incantatrice, maestro d'armi, capitano, cuoca, saggio, cercatrice — con dialoghi, accettazione/consegna missioni
+- **8 Negozi** — armi, pozioni, gemme, cavalcature, acconciature, pergamene, cibo
 - **Chat** — locale/globale/gruppo
 - **Salvataggio automatico** — ogni 60s in localStorage (offline) o server (online)
 

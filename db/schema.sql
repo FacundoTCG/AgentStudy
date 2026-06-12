@@ -77,7 +77,9 @@ CREATE TABLE IF NOT EXISTS inventory (
     slot_index   INTEGER NOT NULL DEFAULT 0 CHECK(slot_index >= 0),
     quantity     INTEGER NOT NULL DEFAULT 1 CHECK(quantity  >= 1),
     equipped     INTEGER NOT NULL DEFAULT 0 CHECK(equipped  IN (0, 1)),
-    equip_slot   TEXT    -- e.g. 'weapon', 'chest', 'ring', NULL when in bag
+    equip_slot   TEXT,   -- e.g. 'weapon', 'body', 'ring', NULL when in bag
+    enhanced     INTEGER NOT NULL DEFAULT 0 CHECK(enhanced BETWEEN 0 AND 9),
+    instance_data TEXT   -- JSON: { bonuses:[{stat,val}], gems:[itemId] }
 );
 
 CREATE INDEX IF NOT EXISTS idx_inventory_character_id ON inventory (character_id);

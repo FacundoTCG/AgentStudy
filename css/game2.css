@@ -1,0 +1,772 @@
+/* ============================================================
+   Regni d'Oriente — Extended UI Panels (game2.css)
+   Dark+gold theme: bg rgba(10,10,20,0.96), borders #2a2a40, accent #d4af37
+   ============================================================ */
+
+/* ===== Shared ext-panel container ===== */
+#ext-panels-container {
+  pointer-events: none; /* children opt in via pointer-events:auto */
+}
+
+/* ===== Ext Panel base overrides ===== */
+.ext-panel {
+  pointer-events: auto;
+  width: min(480px, 95vw);
+}
+
+.ext-panel-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a50 transparent;
+}
+
+.ext-panel-body::-webkit-scrollbar {
+  width: 4px;
+}
+.ext-panel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ext-panel-body::-webkit-scrollbar-thumb {
+  background: #3a3a50;
+  border-radius: 2px;
+}
+
+/* Generic empty message inside ext panels */
+.ext-empty-msg {
+  padding: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: #554;
+}
+
+/* ============================================================
+   PANEL 1 — FORGIA
+   ============================================================ */
+
+.forge-gold-value {
+  color: #ffd75e;
+  font-weight: bold;
+}
+
+/* Item list */
+.forge-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 18px 4px;
+}
+
+.forge-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #2a2a40;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.forge-item:hover {
+  background: rgba(212,175,55,0.06);
+  border-color: #d4af37 !important;
+}
+
+.forge-item.selected {
+  background: rgba(212,175,55,0.12);
+  border-color: #d4af37 !important;
+  box-shadow: 0 0 0 1px rgba(212,175,55,0.3);
+}
+
+.forge-item-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+
+.forge-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.forge-item-name {
+  font-size: 13px;
+  color: #e8e0d0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.forge-item-meta {
+  font-size: 10px;
+  color: #665;
+  margin-top: 2px;
+}
+
+.forge-item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+/* Enhancement level badge (e.g. "+3") on item name */
+.enh-level {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: bold;
+  color: #d4af37;
+  background: rgba(212,175,55,0.15);
+  border: 1px solid rgba(212,175,55,0.4);
+  border-radius: 4px;
+  padding: 0 5px;
+  line-height: 1.5;
+}
+
+/* Success rate indicator */
+.forge-rate {
+  font-size: 13px;
+  font-weight: bold;
+  min-width: 38px;
+  text-align: right;
+}
+
+.rate-good  { color: #7df58a; }
+.rate-mid   { color: #ffd75e; }
+.rate-bad   { color: #ef5350; }
+.rate-max   { color: #9C27B0; font-size: 11px; }
+
+.forge-cost {
+  font-size: 11px;
+  color: #ffd75e;
+}
+
+.forge-needs-mat {
+  font-size: 10px;
+  color: #ff9800;
+  background: rgba(255,152,0,0.1);
+  border: 1px solid rgba(255,152,0,0.3);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Selected item info section */
+.forge-selected-info {
+  margin: 4px 18px 8px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #2a2a40;
+  border-radius: 8px;
+}
+
+.forge-bonus-list {
+  margin-bottom: 8px;
+}
+
+.forge-bonus-section {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #554;
+  margin: 6px 0 4px;
+}
+
+.forge-bonus-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.forge-bonus-stat { color: #887; }
+
+.forge-bonus-val {
+  color: #7df58a;
+  font-weight: bold;
+}
+
+.forge-bonus-val.enh-bonus {
+  color: #d4af37;
+}
+
+.forge-gem-info {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #1a1a2e;
+}
+
+.forge-gem-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.forge-gem-label {
+  color: #665;
+  margin-right: 4px;
+}
+
+.forge-gem-chip {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid #3a3a50;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 11px;
+  color: #ccc;
+}
+
+.forge-gem-empty {
+  font-size: 11px;
+  color: #443;
+  border: 1px dashed #333;
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+.forge-enhance-btn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px 0;
+  background: linear-gradient(135deg, #7a5e10, #c8a030);
+  color: #1a1008;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.forge-enhance-btn:hover {
+  background: linear-gradient(135deg, #9a7a18, #e8c040);
+}
+
+.forge-enhance-btn:active {
+  opacity: 0.8;
+}
+
+/* ============================================================
+   PANEL 2 — ALCHIMIA
+   ============================================================ */
+
+/* Gem grid */
+.gem-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  padding: 4px 18px 12px;
+}
+
+.gem-card {
+  position: relative;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #2a2a40;
+  border-radius: 8px;
+  padding: 12px 8px 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: border-color 0.15s;
+}
+
+.gem-card:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.gem-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+/* Roman numeral grade badge */
+.gem-grade {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 9px;
+  font-weight: bold;
+  color: #111;
+  border-radius: 3px;
+  padding: 1px 4px;
+  line-height: 1.4;
+}
+
+.gem-name {
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1.3;
+}
+
+.gem-qty {
+  font-size: 12px;
+  color: #d4af37;
+  font-weight: bold;
+}
+
+.gem-combine-btn {
+  margin-top: 4px;
+  font-size: 10px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid currentColor;
+  cursor: pointer;
+  transition: background 0.15s;
+  line-height: 1.4;
+}
+
+.gem-combine-btn:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.gem-max-badge {
+  font-size: 10px;
+  color: #9C27B0;
+  font-weight: bold;
+  background: rgba(156,39,176,0.12);
+  border: 1px solid rgba(156,39,176,0.3);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-top: 2px;
+}
+
+.gem-need-more {
+  font-size: 10px;
+  color: #554;
+  margin-top: 2px;
+}
+
+/* Badge used in alchemy socket gem list */
+.gem-grade-badge {
+  font-size: 9px;
+  font-weight: bold;
+  color: #111;
+  border-radius: 3px;
+  padding: 1px 5px;
+  line-height: 1.5;
+}
+
+/* Socket section */
+.alchemy-socket-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 18px;
+}
+
+.alchemy-socket-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.alchemy-socket-label {
+  font-size: 10px;
+  color: #665;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.alchemy-select-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
+}
+
+.alchemy-select-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #2a2a40;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.alchemy-select-item:hover {
+  background: rgba(212,175,55,0.06);
+}
+
+.alchemy-select-item.selected {
+  background: rgba(212,175,55,0.1);
+  border-color: #d4af37 !important;
+}
+
+.alchemy-si-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.alchemy-si-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alchemy-si-slots {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #776;
+}
+
+.alchemy-select-empty {
+  font-size: 11px;
+  color: #443;
+  padding: 10px;
+  text-align: center;
+}
+
+.alchemy-socket-btn {
+  display: block;
+  width: calc(100% - 36px);
+  margin: 14px 18px 4px;
+  padding: 10px 0;
+  background: linear-gradient(135deg, #1a4a8a, #2196f3);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.alchemy-socket-btn:hover:not(.disabled) {
+  background: linear-gradient(135deg, #1e5caa, #42a5f5);
+}
+
+.alchemy-socket-btn.disabled,
+.alchemy-socket-btn:disabled {
+  background: rgba(33,150,243,0.2);
+  color: #335;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ============================================================
+   PANEL 3 — SCUDERIA
+   ============================================================ */
+
+.mount-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 18px 8px;
+}
+
+.mount-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #2a2a40;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.mount-card:hover {
+  border-color: #d4af37;
+  background: rgba(212,175,55,0.05);
+}
+
+.mount-card.active {
+  border-color: #27ae60;
+  background: rgba(39,174,96,0.07);
+  box-shadow: 0 0 0 1px rgba(39,174,96,0.2);
+}
+
+.mount-icon {
+  font-size: 30px;
+  flex-shrink: 0;
+}
+
+.mount-info {
+  flex: 1;
+}
+
+.mount-name {
+  font-size: 14px;
+  color: #e8e0d0;
+  font-weight: bold;
+}
+
+.mount-meta {
+  display: flex;
+  gap: 10px;
+  margin-top: 3px;
+}
+
+.mount-speed {
+  font-size: 11px;
+  color: #7df58a;
+  font-weight: bold;
+}
+
+.mount-level {
+  font-size: 11px;
+  color: #665;
+}
+
+.mount-action {
+  flex-shrink: 0;
+}
+
+.mount-active-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: bold;
+  color: #111;
+  background: #27ae60;
+  border-radius: 5px;
+  padding: 3px 9px;
+  letter-spacing: 0.5px;
+}
+
+.mount-inactive-badge {
+  display: inline-block;
+  font-size: 11px;
+  color: #554;
+  border: 1px solid #333;
+  border-radius: 5px;
+  padding: 3px 9px;
+}
+
+/* ============================================================
+   PANEL 4 — BARBIERE
+   ============================================================ */
+
+.hair-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  padding: 4px 18px 12px;
+}
+
+.hair-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #2a2a40;
+  border-radius: 9px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.hair-card:hover {
+  border-color: #d4af37;
+  background: rgba(212,175,55,0.06);
+}
+
+.hair-card.active {
+  border-color: #d4af37;
+  background: rgba(212,175,55,0.1);
+  box-shadow: 0 0 0 1px rgba(212,175,55,0.25);
+}
+
+.hair-icon {
+  font-size: 28px;
+}
+
+/* Color swatch */
+.hair-swatch {
+  width: 28px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.15);
+  flex-shrink: 0;
+}
+
+.hair-name {
+  font-size: 11px;
+  color: #bbb;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.hair-active-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 9px;
+  font-weight: bold;
+  color: #111;
+  background: #d4af37;
+  border-radius: 3px;
+  padding: 1px 4px;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   PANEL 5 — ABILITÀ
+   ============================================================ */
+
+.skills-points-bar {
+  margin: 4px 18px 8px;
+  padding: 10px 14px;
+  background: rgba(212,175,55,0.07);
+  border: 1px solid rgba(212,175,55,0.25);
+  border-radius: 7px;
+  font-size: 13px;
+  color: #998;
+}
+
+.skills-points-num {
+  color: #d4af37;
+  font-weight: bold;
+  font-size: 16px;
+  margin-left: 4px;
+}
+
+.skills-upgrade-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 18px 8px;
+}
+
+.skill-upgrade-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #1a1a2e;
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+
+.skill-upgrade-row:hover {
+  border-color: #2a2a40;
+}
+
+.skill-upgrade-icon {
+  font-size: 26px;
+  flex-shrink: 0;
+  width: 32px;
+  text-align: center;
+}
+
+.skill-upgrade-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.skill-upgrade-name {
+  font-size: 13px;
+  color: #d4af37;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.skill-upgrade-desc {
+  font-size: 11px;
+  color: #887;
+  line-height: 1.5;
+  margin-bottom: 3px;
+}
+
+.skill-upgrade-meta {
+  display: flex;
+  gap: 10px;
+}
+
+.skill-mp-cost {
+  font-size: 10px;
+  color: #3498db;
+}
+
+.skill-cd-info {
+  font-size: 10px;
+  color: #556;
+}
+
+.skill-upgrade-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.skill-upgrade-level {
+  font-size: 11px;
+  color: #776;
+  text-align: center;
+}
+
+.skill-lv-num {
+  color: #d4af37;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+/* Round gold "+" button */
+.plus-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7a5e10, #c8a030);
+  color: #1a1008;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.1s, opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.plus-btn:hover:not(.disabled):not([disabled]) {
+  background: linear-gradient(135deg, #9a7a18, #e8c040);
+  transform: scale(1.1);
+}
+
+.plus-btn:active:not(.disabled):not([disabled]) {
+  transform: scale(0.95);
+}
+
+.plus-btn.disabled,
+.plus-btn[disabled] {
+  background: rgba(255,255,255,0.06);
+  color: #333;
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
