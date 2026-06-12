@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Regni d'Oriente — Launcher</title>
+<link rel="stylesheet" href="css/launcher.css">
+</head>
+<body>
+
+<!-- Custom title bar -->
+<div id="titlebar">
+  <span id="tb-title">Regni d'Oriente — Launcher</span>
+  <div id="tb-controls">
+    <button id="tb-min" onclick="window.electronAPI && window.electronAPI.minimizeWindow()">─</button>
+    <button id="tb-close" onclick="window.electronAPI && window.electronAPI.quitLauncher()">✕</button>
+  </div>
+</div>
+
+<!-- Main launcher layout -->
+<div id="launcher-root">
+
+  <!-- Left panel: branding + news -->
+  <div id="launcher-left">
+    <!-- Background art layers -->
+    <div class="bg-art"></div>
+    <div class="bg-vignette"></div>
+
+    <!-- Logo -->
+    <div id="logo-area">
+      <div id="logo-dragon">⚔</div>
+      <div id="logo-title">REGNI D'ORIENTE</div>
+      <div id="logo-sub">MMORPG — Azione e Leggenda</div>
+    </div>
+
+    <!-- News box -->
+    <div id="news-box">
+      <div class="news-header">NOTIZIE E AGGIORNAMENTI</div>
+      <div class="news-list">
+        <div class="news-item">
+          <span class="news-tag new">NUOVO</span>
+          <span class="news-text">Aggiornamento 1.0 — Lancio ufficiale! Disponibili tutte le classi, dungeon e zone.</span>
+          <span class="news-date">Oggi</span>
+        </div>
+        <div class="news-item">
+          <span class="news-tag patch">PATCH</span>
+          <span class="news-text">Introdotte le Pietre Demoniache di livello VIII e la Fortezza degli Orchi.</span>
+          <span class="news-date">12 giu 2025</span>
+        </div>
+        <div class="news-item">
+          <span class="news-tag event">EVENTO</span>
+          <span class="news-text">Evento stagionale: Boss dei Picchi del Tramonto con loot potenziato.</span>
+          <span class="news-date">10 giu 2025</span>
+        </div>
+        <div class="news-item">
+          <span class="news-tag patch">PATCH</span>
+          <span class="news-text">Bilanciamento skill Sciamano — Fulmine a Catena ora correttamente scalato.</span>
+          <span class="news-date">8 giu 2025</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel: character creation + play button -->
+  <div id="launcher-right">
+
+    <div id="right-inner">
+
+      <!-- Server status -->
+      <div id="server-status">
+        <div class="srv-row">
+          <span class="srv-dot online"></span>
+          <span class="srv-label">Server Offline</span>
+        </div>
+        <div class="srv-players">Modalità Singleplayer</div>
+      </div>
+
+      <!-- Character creation -->
+      <div id="char-create-box">
+        <div class="rc-title">CREA PERSONAGGIO</div>
+
+        <div class="field-row">
+          <label>Nome</label>
+          <input type="text" id="char-name" placeholder="Inserisci nome eroe..." maxlength="20" spellcheck="false">
+        </div>
+
+        <div class="field-row">
+          <label>Classe</label>
+          <div id="class-selector">
+            <div class="class-card active" data-class="warrior">
+              <div class="cc-icon">⚔</div>
+              <div class="cc-name">Guerriero</div>
+              <div class="cc-role">TANK · FORZA</div>
+            </div>
+            <div class="class-card" data-class="ninja">
+              <div class="cc-icon">🗡</div>
+              <div class="cc-name">Ninja</div>
+              <div class="cc-role">DPS · VELOCITÀ</div>
+            </div>
+            <div class="class-card" data-class="mage">
+              <div class="cc-icon">🔮</div>
+              <div class="cc-name">Mago Oscuro</div>
+              <div class="cc-role">MAGIA · AREA</div>
+            </div>
+            <div class="class-card" data-class="shaman">
+              <div class="cc-icon">🌿</div>
+              <div class="cc-name">Sciamano</div>
+              <div class="cc-role">SUPPORTO · CURA</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Class description -->
+        <div id="class-desc-box">
+          <span id="class-desc-text">Guerriero impavido dotato di forza bruta e resistenza. Porta scudo e spada in prima linea.</span>
+        </div>
+      </div>
+
+      <!-- Play button -->
+      <button id="play-btn">
+        <span id="play-label">GIOCA</span>
+        <div id="play-shine"></div>
+      </button>
+
+      <div id="play-subtext">F11 — schermo intero in gioco</div>
+
+      <!-- Bottom links -->
+      <div id="launcher-footer">
+        <span class="footer-link" onclick="void 0">Impostazioni</span>
+        <span class="footer-sep">|</span>
+        <span class="footer-link" onclick="void 0">Crediti</span>
+        <span class="footer-sep">|</span>
+        <span id="version-label">v1.0.0</span>
+      </div>
+
+    </div><!-- /right-inner -->
+  </div><!-- /launcher-right -->
+
+</div><!-- /launcher-root -->
+
+<script>
+(function() {
+  // Version
+  if (window.electronAPI) {
+    window.electronAPI.getVersion().then(v => {
+      document.getElementById('version-label').textContent = 'v' + v;
+    });
+  }
+
+  // Class descriptions
+  const descs = {
+    warrior: 'Guerriero impavido dotato di forza bruta e resistenza. Porta scudo e spada in prima linea.',
+    ninja:   'Agile assassino che colpisce da vicino con doppi pugnali. Alta velocità e critici letali.',
+    mage:    'Signore dell\'oscurità capace di devastare intere aree con magie elementali.',
+    shaman:  'Guardiano della natura. Cura gli alleati e evoca totem mentre affronta i nemici con la forza della terra.',
+  };
+
+  let selectedClass = 'warrior';
+  const cards = document.querySelectorAll('.class-card');
+  cards.forEach(card => {
+    card.addEventListener('click', () => {
+      cards.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      selectedClass = card.dataset.class;
+      document.getElementById('class-desc-text').textContent = descs[selectedClass];
+    });
+  });
+
+  // Play button
+  document.getElementById('play-btn').addEventListener('click', () => {
+    const name = document.getElementById('char-name').value.trim();
+    if (!name) {
+      document.getElementById('char-name').classList.add('shake');
+      document.getElementById('char-name').focus();
+      setTimeout(() => document.getElementById('char-name').classList.remove('shake'), 500);
+      return;
+    }
+
+    const btn = document.getElementById('play-btn');
+    btn.disabled = true;
+    document.getElementById('play-label').textContent = 'CARICAMENTO...';
+
+    const characterData = { name, classId: selectedClass };
+
+    if (window.electronAPI) {
+      window.electronAPI.launchGame(characterData);
+    } else {
+      // Browser fallback: redirect
+      const params = new URLSearchParams(characterData);
+      window.location.href = 'game.html?' + params.toString();
+    }
+  });
+
+  // Allow Enter key on name input
+  document.getElementById('char-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('play-btn').click();
+  });
+})();
+</script>
+</body>
+</html>

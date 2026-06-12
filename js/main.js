@@ -684,30 +684,43 @@ function startGame(classKey, playerName, savedState) {
 // ============================================================
 // Bootstrap: called from game.html
 // ============================================================
-window.bootstrapGame = function(canvas) {
+// Map launcher classId → GameData class key
+const CLASS_ID_MAP = {
+  warrior:  'guerriero',
+  ninja:    'ninja',
+  mage:     'mago',
+  shaman:   'sciamano',
+  guerriero:'guerriero',
+  mago:     'mago',
+  sciamano: 'sciamano',
+};
+
+window.bootstrapGame = function(canvas, charData) {
   // Initialize renderer first (needs canvas)
   gameState.renderer = new window.GameRenderer(canvas);
   gameState.ui = new window.UIManager(gameState);
   if (window.UIExtensions) gameState.ui2 = new window.UIExtensions(gameState);
   window.addEventListener('resize', () => gameState.renderer.resize());
 
-  // Check for existing save
-  const save = window.SaveSystem ? null : null; // SaveSystem not constructed yet
+  // Existing save check
   const savedRaw = localStorage.getItem('ro_save');
-
   if (savedRaw) {
-    try {
-      const saved = JSON.parse(savedRaw);
-      // Show "continue" option (handled in index.html)
-      window._savedGame = saved;
-    } catch (_) {}
+    try { window._savedGame = JSON.parse(savedRaw); } catch (_) {}
   }
 
-  // Read from URL params (passed from character select)
-  const params = new URLSearchParams(window.location.search);
-  const classKey = params.get('class') || 'guerriero';
-  const name = decodeURIComponent(params.get('name') || 'Avventuriero');
-  const resume = params.get('resume') === '1';
+  // Resolve character: Electron charData > URL params > defaults
+  let classKey, name, resume;
+  if (charData && charData.name) {
+    name     = charData.name;
+    classKey = CLASS_ID_MAP[charData.classId] || 'guerriero';
+    resume   = false;
+  } else {
+    const params = new URLSearchParams(window.location.search);
+    const rawClass = params.get('class') || params.get('classId') || 'guerriero';
+    classKey = CLASS_ID_MAP[rawClass] || rawClass;
+    name     = decodeURIComponent(params.get('name') || 'Avventuriero');
+    resume   = params.get('resume') === '1';
+  }
 
   const savedState = (resume && window._savedGame) ? window._savedGame.player : null;
   startGame(classKey, name, savedState);

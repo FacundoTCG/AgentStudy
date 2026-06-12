@@ -1,126 +1,154 @@
-# ⚔ Regni d'Oriente — MMORPG Test
+# ⚔ Regni d'Oriente — MMORPG Desktop
 
-Un MMORPG d'azione completo giocabile direttamente nel browser, ispirato al gameplay degli MMORPG orientali classici. Tutto il codice e gli asset sono originali (grafica procedurale 3D con Three.js).
+Un MMORPG d'azione completo con client desktop Electron. Grafica 3D procedurale con Three.js, stile visivo Metin2.
 
-## Avvio rapido
+---
+
+## Avvio rapido (Desktop — Electron)
+
+### Windows
+```
+start.bat          ← doppio clic per avviare
+```
+
+### Mac / Linux
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+### Manuale
+```bash
+npm install        # installa Electron + dipendenze (una volta sola)
+npm start          # apre il launcher desktop
+```
+
+---
+
+## Build distribuzione (.exe / .dmg / .AppImage)
 
 ```bash
-# Per giocare offline: apri semplicemente
-index.html   ← nel browser (nessun server necessario)
+npm install
 
-# Per il server multiplayer:
+# Windows installer (.exe)
+npm run build:win
+
+# Mac (.dmg)
+npm run build:mac
+
+# Linux (.AppImage)
+npm run build:linux
+
+# Tutte le piattaforme
+npm run build
+```
+
+I file di output si trovano nella cartella `dist/`.
+
+> **Note per la build**: la prima volta `npm run build` scarica Electron (~150 MB). Sono necessari i file icona in `assets/icon.ico` (Windows), `assets/icon.icns` (Mac), `assets/icon.png` (Linux). Se non presenti, la build prosegue senza icona.
+
+---
+
+## Server multiplayer (opzionale)
+
+```bash
 cd server
 npm install
 npm start
-# poi vai su http://localhost:3000
+# → http://localhost:3000
 ```
 
-## Architettura del progetto
+---
+
+## Architettura
 
 ```
 regni-doriente/
-├── index.html              ← Landing page con selezione classe
-├── game.html               ← Client di gioco 3D
-├── leaderboard.html        ← Classifiche globali
+├── electron-main.js      ← Processo principale Electron (launcher → gioco)
+├── electron-preload.js   ← Bridge IPC sicuro
+├── package.json          ← Configurazione Electron + electron-builder
+├── start.bat / start.sh  ← Script di avvio rapido
+│
+├── launcher.html         ← Launcher (selezione classe, notizie, play)
+├── index.html            ← Landing page browser
+├── game.html             ← Client 3D di gioco
+├── leaderboard.html      ← Classifiche
 │
 ├── css/
-│   ├── style.css           ← Stile sito + componenti condivisi
-│   └── game.css            ← UI di gioco (HUD, pannelli, chat)
+│   ├── launcher.css      ← UI launcher (stile Metin2)
+│   ├── game.css          ← HUD in-game Metin2 (barre HP/MP/XP, skill bar)
+│   ├── game2.css         ← Pannelli estesi (forgia, alchimia, stalla, barbiere)
+│   └── style.css         ← Stile landing + caricamento
 │
 ├── js/
-│   ├── data.js             ← Database di gioco (1230 righe)
-│   │                         classi, abilità, oggetti, mostri, mappe,
-│   │                         dungeon, NPC, negozi, missioni
-│   ├── engine.js           ← Motore 3D Three.js (1070 righe)
-│   │                         terreno, decorazioni, mesh personaggi,
-│   │                         effetti particellari, camera, minimap
-│   ├── systems.js          ← Sistemi di gioco (~900 righe)
-│   │                         CombatSystem, MonsterAI, InventorySystem,
-│   │                         QuestSystem, DungeonSystem, SaveSystem
-│   ├── ui.js               ← Interfaccia (~1000 righe)
-│   │                         HUD, inventario, missioni, personaggio,
-│   │                         mappa, dialoghi NPC, negozio, chat
-│   └── main.js             ← Loop di gioco + input + eventi (~700 righe)
+│   ├── data.js           ← Database di gioco (1230 righe)
+│   ├── content.js        ← Catalogo oggetti procedurali (298 oggetti)
+│   ├── content-world.js  ← Mondo, zone, NPC, missioni (768 righe)
+│   ├── engine.js         ← Motore 3D Three.js (1130 righe)
+│   ├── engine2.js        ← Cavalcature, capigliature, effetti (551 righe)
+│   ├── systems.js        ← Sistemi di gioco (combat, AI, inventario, missioni)
+│   ├── systems2.js       ← Forgia, alchimia, stalla, barbiere, abilità
+│   ├── ui.js             ← HUD, inventario, dialoghi, negozio (~1025 righe)
+│   ├── ui2.js            ← Pannelli Forgia/Alchimia/Stalla/Barbiere (~785 righe)
+│   └── main.js           ← Loop di gioco + input + bootstrap (~720 righe)
 │
 ├── server/
-│   ├── package.json        ← Node.js dependencies
-│   └── server.js           ← Server Express + Socket.io (~400 righe)
-│                             auth, personaggi, salvataggio, chat,
-│                             sessioni, classifiche API
+│   ├── package.json
+│   └── server.js         ← Server Express + Socket.io (~395 righe)
 │
 └── db/
-    └── schema.sql          ← Schema SQLite completo
-                              accounts, characters, inventory, quests,
-                              dungeon_completions, chat_messages, views
+    └── schema.sql        ← Schema SQLite completo
 ```
 
-## Sistemi implementati
+---
 
-### Gioco
-- **Motore 3D** — Three.js, vista in terza persona, camera rotante, fog, ombre
-- **4 Classi** — Guerriero, Ninja, Mago Oscuro, Sciamano — ognuna con **8 abilità** potenziabili (Lv 1-10 con punti abilità)
-- **32 Abilità** — AoE, multi-hit, scatti, buff, scudi, cure, fulmini a catena, veleno, esecuzione, meteorite...
-- **Combattimento real-time** — attacchi normali, critici, status (veleno, stun, rallentamento)
-- **81 Mostri** — 64 mob in 8 zone a tier crescente + 6 boss di zona + boss dei dungeon; AI per ruolo (minion, soldier, ranged_kite, elite/pack, champion/boss)
-- **2 Dungeon** — Tana dei Banditi (lv6+) e Fortezza degli Orchi (lv11+)
-- **Pietre Demoniache a 8 livelli** — da Pietra I (lv4) a Pietra VIII (lv54), evocano i mostri della loro zona
+## Contenuto di gioco
 
-### Progressione
-- **Livelli illimitati** — curva XP `100 × lvl^1.7`, +1 punto abilità a livello
-- **298 Oggetti** — 76 armi, 93 armature, 30 gioielli, 25 gemme, 10 cavalcature, 18 capigliature, cibi, pergamene, materiali — 5 qualità
-- **9 Slot equipaggiamento** — arma, corpo, testa, scudo, stivali, bracciale, collana, orecchini, anello
-- **Potenziamento +0/+9** — alla Forgia: costi in oro, Pietre di Raffinazione da +4, Pergamena della Benedizione contro i fallimenti
-- **Bonus casuali** — ogni oggetto equipaggiabile droppa con 0-3 bonus (21 tipi); rerollabili con la Pergamena dell'Incantamento
-- **Alchimia** — 5 gemme × 5 gradi: combina 3 uguali per il grado successivo, incastonale negli alloggiamenti (0-3 per qualità)
-- **Cavalcature** — 10 mount (+25% → +95% velocità), tasto R per evocarle
-- **Capigliature** — 18 acconciature dal barbiere
-- **Inventario 45 slot** — con istanze uniche per gli equipaggiabili (+enh, bonus, gemme)
-- **12 Missioni** — kill, collect e obiettivi evento, ricompense in XP/oro/oggetti
+| Sistema | Dettagli |
+|---|---|
+| **Classi** | 4 (Guerriero, Ninja, Mago Oscuro, Sciamano) |
+| **Abilità** | 32 (8 per classe, livelli 1-10 con punti abilità) |
+| **Oggetti** | 298 (76 armi, 93 armature, 30 gioielli, 25 gemme, 10 cavalcature, 18 capigliature…) |
+| **Mostri** | 81 (64 mob in 8 zone + 6 boss di zona + boss dungeon) |
+| **Zone** | 8 zone a tier crescente (Prati di Levante → Picchi del Tramonto) |
+| **Dungeon** | 2 (Tana dei Banditi lv6+, Fortezza degli Orchi lv11+) |
+| **NPC** | 13 con dialoghi, missioni, negozi |
+| **Potenziamento** | +0/+9 con probabilità decrescenti e Pietre di Raffinazione |
+| **Alchimia** | 5 gemme × 5 gradi, incastonabili in 0-3 alloggiamenti |
+| **Cavalcature** | 10 mount (+25% → +95% velocità), tasto R |
+| **Capigliature** | 18 acconciature dal barbiere |
+| **Inventario** | 45 slot, 9 slot equipaggiamento |
+| **Salvataggio** | Automatico ogni 60s (localStorage offline / server online) |
 
-### Online
-- **13 NPC** — fabbro, mercante, guaritrice, oste, barbiera, alchimista, stalliere, incantatrice, maestro d'armi, capitano, cuoca, saggio, cercatrice — con dialoghi, accettazione/consegna missioni
-- **8 Negozi** — armi, pozioni, gemme, cavalcature, acconciature, pergamene, cibo
-- **Chat** — locale/globale/gruppo
-- **Salvataggio automatico** — ogni 60s in localStorage (offline) o server (online)
+---
 
 ## Controlli
 
 | Tasto | Azione |
 |---|---|
 | `WASD` / Frecce | Movimento |
-| `Click sinistro` | Muovi / Attacca / Seleziona NPC |
+| `Click sinistro` | Muovi / Attacca / NPC |
 | `Click destro + trascina` | Ruota camera |
-| `Scroll` | Zoom camera |
-| `1 2 3` | Abilità di classe |
-| `Spazio` | Pozione di cura |
-| `Tab` | Seleziona nemico più vicino |
+| `Scroll` | Zoom |
+| `1–8` | Abilità di classe |
+| `Q` | Pozione di cura |
+| `R` | Cavalcatura (evoca/rimanda) |
 | `I` | Inventario |
-| `J` | Registro missioni |
-| `C` | Scheda personaggio |
-| `M` | Mappa del mondo |
-| `Invio` | Apri chat |
-| `Esc` | Menu di pausa |
+| `J` | Missioni |
+| `C` | Personaggio |
+| `M` | Mappa |
+| `F11` | Schermo intero |
+| `Esc` | Menu pausa |
 
-## Server (opzionale per multiplayer)
-
-Il server Node.js aggiunge:
-- Registrazione e login con password hashate (bcryptjs)
-- Salvataggio personaggi su database SQLite
-- Sessioni WebSocket (Socket.io) per posizioni in tempo reale
-- Chat globale sincronizzata
-- API REST per le classifiche
-- Stato mondo condiviso (mob aggro broadcastato)
-
-```bash
-cd server && npm install && npm start
-# Server in ascolto su http://localhost:3000
-```
+---
 
 ## Tecnologie
 
 | Layer | Tecnologia |
 |---|---|
-| 3D Rendering | Three.js r128 (CDN) |
+| Desktop | Electron 28 |
+| Build | electron-builder 24 |
+| 3D Rendering | Three.js r128 |
 | Server | Node.js + Express 4 |
 | Realtime | Socket.io 4 |
 | Database | SQLite (better-sqlite3) |

@@ -1,6 +1,6 @@
 /* ============================================================
    Regni d'Oriente — Extended UI Panels (game2.css)
-   Dark+gold theme: bg rgba(10,10,20,0.96), borders #2a2a40, accent #d4af37
+   Dark+gold theme: bg rgba(18,10,4,0.96), borders #3a2408, accent #c8922a
    ============================================================ */
 
 /* ===== Shared ext-panel container ===== */
@@ -20,7 +20,7 @@
   overflow-x: hidden;
   padding-bottom: 16px;
   scrollbar-width: thin;
-  scrollbar-color: #3a3a50 transparent;
+  scrollbar-color: #4a3210 transparent;
 }
 
 .ext-panel-body::-webkit-scrollbar {
@@ -30,7 +30,7 @@
   background: transparent;
 }
 .ext-panel-body::-webkit-scrollbar-thumb {
-  background: #3a3a50;
+  background: #4a3210;
   border-radius: 2px;
 }
 
@@ -47,7 +47,7 @@
    ============================================================ */
 
 .forge-gold-value {
-  color: #ffd75e;
+  color: #e8b84a;
   font-weight: bold;
 }
 
@@ -64,22 +64,22 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid #2a2a40;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid #3a2408;
   border-radius: 8px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
 
 .forge-item:hover {
-  background: rgba(212,175,55,0.06);
-  border-color: #d4af37 !important;
+  background: rgba(200,146,42,0.06);
+  border-color: #c8922a !important;
 }
 
 .forge-item.selected {
-  background: rgba(212,175,55,0.12);
-  border-color: #d4af37 !important;
-  box-shadow: 0 0 0 1px rgba(212,175,55,0.3);
+  background: rgba(200,146,42,0.12);
+  border-color: #c8922a !important;
+  box-shadow: 0 0 0 1px rgba(200,146,42,0.3);
 }
 
 .forge-item-icon {
@@ -124,9 +124,9 @@
   display: inline-block;
   font-size: 11px;
   font-weight: bold;
-  color: #d4af37;
-  background: rgba(212,175,55,0.15);
-  border: 1px solid rgba(212,175,55,0.4);
+  color: #c8922a;
+  background: rgba(200,146,42,0.15);
+  border: 1px solid rgba(200,146,42,0.4);
   border-radius: 4px;
   padding: 0 5px;
   line-height: 1.5;
@@ -141,13 +141,13 @@
 }
 
 .rate-good  { color: #7df58a; }
-.rate-mid   { color: #ffd75e; }
+.rate-mid   { color: #e8b84a; }
 .rate-bad   { color: #ef5350; }
 .rate-max   { color: #9C27B0; font-size: 11px; }
 
 .forge-cost {
   font-size: 11px;
-  color: #ffd75e;
+  color: #e8b84a;
 }
 
 .forge-needs-mat {
@@ -163,8 +163,8 @@
 .forge-selected-info {
   margin: 4px 18px 8px;
   padding: 12px 14px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid #2a2a40;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid #3a2408;
   border-radius: 8px;
 }
 
@@ -195,13 +195,13 @@
 }
 
 .forge-bonus-val.enh-bonus {
-  color: #d4af37;
+  color: #c8922a;
 }
 
 .forge-gem-info {
   margin-top: 4px;
   padding-top: 8px;
-  border-top: 1px solid #1a1a2e;
+  border-top: 1px solid #2a1808;
 }
 
 .forge-gem-row {
@@ -218,8 +218,8 @@
 }
 
 .forge-gem-chip {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid #3a3a50;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid #4a3210;
   border-radius: 4px;
   padding: 2px 7px;
   font-size: 11px;
@@ -272,8 +272,8 @@
 
 .gem-card {
   position: relative;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid #2a2a40;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid #3a2408;
   border-radius: 8px;
   padding: 12px 8px 10px;
   text-align: center;
@@ -314,7 +314,7 @@
 
 .gem-qty {
   font-size: 12px;
-  color: #d4af37;
+  color: #c8922a;
   font-weight: bold;
 }
 
@@ -331,7 +331,7 @@
 }
 
 .gem-combine-btn:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.3);
 }
 
 .gem-max-badge {
@@ -397,8 +397,8 @@
   align-items: center;
   gap: 7px;
   padding: 7px 9px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid #2a2a40;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid #3a2408;
   border-radius: 6px;
   cursor: pointer;
   font-size: 11px;
@@ -406,12 +406,12 @@
 }
 
 .alchemy-select-item:hover {
-  background: rgba(212,175,55,0.06);
+  background: rgba(200,146,42,0.06);
 }
 
 .alchemy-select-item.selected {
-  background: rgba(212,175,55,0.1);
-  border-color: #d4af37 !important;
+  background: rgba(200,146,42,0.1);
+  border-color: #c8922a !important;
 }
 
 .alchemy-si-icon {
@@ -483,16 +483,16 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid #2a2a40;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid #3a2408;
   border-radius: 9px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
 
 .mount-card:hover {
-  border-color: #d4af37;
-  background: rgba(212,175,55,0.05);
+  border-color: #c8922a;
+  background: rgba(200,146,42,0.05);
 }
 
 .mount-card.active {
@@ -575,8 +575,8 @@
   align-items: center;
   gap: 6px;
   padding: 14px 10px 10px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid #2a2a40;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid #3a2408;
   border-radius: 9px;
   cursor: pointer;
   text-align: center;
@@ -584,14 +584,14 @@
 }
 
 .hair-card:hover {
-  border-color: #d4af37;
-  background: rgba(212,175,55,0.06);
+  border-color: #c8922a;
+  background: rgba(200,146,42,0.06);
 }
 
 .hair-card.active {
-  border-color: #d4af37;
-  background: rgba(212,175,55,0.1);
-  box-shadow: 0 0 0 1px rgba(212,175,55,0.25);
+  border-color: #c8922a;
+  background: rgba(200,146,42,0.1);
+  box-shadow: 0 0 0 1px rgba(200,146,42,0.25);
 }
 
 .hair-icon {
@@ -624,7 +624,7 @@
   font-size: 9px;
   font-weight: bold;
   color: #111;
-  background: #d4af37;
+  background: #c8922a;
   border-radius: 3px;
   padding: 1px 4px;
   line-height: 1.4;
@@ -637,15 +637,15 @@
 .skills-points-bar {
   margin: 4px 18px 8px;
   padding: 10px 14px;
-  background: rgba(212,175,55,0.07);
-  border: 1px solid rgba(212,175,55,0.25);
+  background: rgba(200,146,42,0.07);
+  border: 1px solid rgba(200,146,42,0.25);
   border-radius: 7px;
   font-size: 13px;
   color: #998;
 }
 
 .skills-points-num {
-  color: #d4af37;
+  color: #c8922a;
   font-weight: bold;
   font-size: 16px;
   margin-left: 4px;
@@ -663,14 +663,14 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid #1a1a2e;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid #2a1808;
   border-radius: 8px;
   transition: border-color 0.15s;
 }
 
 .skill-upgrade-row:hover {
-  border-color: #2a2a40;
+  border-color: #3a2408;
 }
 
 .skill-upgrade-icon {
@@ -687,7 +687,7 @@
 
 .skill-upgrade-name {
   font-size: 13px;
-  color: #d4af37;
+  color: #c8922a;
   font-weight: bold;
   margin-bottom: 2px;
 }
@@ -729,7 +729,7 @@
 }
 
 .skill-lv-num {
-  color: #d4af37;
+  color: #c8922a;
   font-weight: bold;
   font-size: 13px;
 }

@@ -3,28 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Regni d'Oriente — Gioca</title>
+<title>Regni d'Oriente</title>
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/game.css">
 <link rel="stylesheet" href="css/game2.css">
-<!-- Three.js from CDN (r158) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- Three.js: use local copy in Electron, CDN fallback in browser -->
+<script>
+(function(){
+  var s = document.createElement('script');
+  var isElectron = (typeof process !== 'undefined' && process.versions && process.versions.electron);
+  s.src = isElectron
+    ? 'node_modules/three/build/three.min.js'
+    : 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  document.head.appendChild(s);
+})();
+</script>
 </head>
 <body class="game-body">
+
+<!-- Electron custom titlebar (hidden when fullscreen) -->
+<div id="electron-titlebar" style="display:none">
+  <span id="electron-titlebar-title">⚔ Regni d'Oriente</span>
+  <div>
+    <button class="et-btn" onclick="window.electronAPI&&window.electronAPI.minimizeWindow()" title="Minimizza">─</button>
+    <button class="et-btn" onclick="window.electronAPI&&window.electronAPI.toggleFullscreen()" title="Schermo intero">⊡</button>
+    <button class="et-btn" id="et-close" onclick="window.electronAPI&&window.electronAPI.exitToLauncher()" title="Esci al launcher">✕</button>
+  </div>
+</div>
 
 <!-- Loading overlay -->
 <div id="loading-screen">
   <div class="loading-content">
     <div class="loading-title">⚔ Regni d'Oriente</div>
     <div class="loading-bar-wrap"><div id="loading-bar"></div></div>
-    <div id="loading-text">Caricamento...</div>
+    <div id="loading-text">Inizializzazione...</div>
   </div>
 </div>
 
 <!-- 3D Canvas -->
 <canvas id="game-canvas"></canvas>
 
-<!-- UI Layer (all HUD, panels, chat, etc.) -->
+<!-- UI Layer -->
 <div id="ui-root"></div>
 
 <!-- Scripts (order matters) -->
@@ -40,41 +60,58 @@
 <script src="js/main.js"></script>
 
 <script>
-// Boot sequence with loading progress
 (function boot() {
-  const bar = document.getElementById('loading-bar');
-  const txt = document.getElementById('loading-text');
+  // Show Electron titlebar if inside Electron
+  if (window.electronAPI && window.electronAPI.isElectron) {
+    document.getElementById('electron-titlebar').style.display = 'flex';
+    // Push canvas down so it doesn't go under titlebar
+    document.getElementById('game-canvas').style.top = '28px';
+    document.getElementById('ui-root').style.top = '28px';
+  }
+
+  const bar  = document.getElementById('loading-bar');
+  const txt  = document.getElementById('loading-text');
   const steps = [
     [10, 'Caricamento dati di gioco...'],
-    [30, 'Inizializzazione motore 3D...'],
-    [50, 'Costruzione del mondo...'],
-    [70, 'Spawn dei mostri...'],
-    [85, 'Configurazione UI...'],
+    [28, 'Inizializzazione motore 3D...'],
+    [48, 'Costruzione del mondo...'],
+    [66, 'Generazione mostri...'],
+    [82, 'Configurazione interfaccia...'],
+    [95, 'Collegamento sistemi...'],
     [100, 'Pronto!'],
   ];
   let step = 0;
 
   function advance() {
     if (step >= steps.length) {
-      // All loaded — start the game
       setTimeout(() => {
         document.getElementById('loading-screen').style.opacity = '0';
         setTimeout(() => {
           document.getElementById('loading-screen').style.display = 'none';
         }, 600);
+
         const canvas = document.getElementById('game-canvas');
-        window.bootstrapGame(canvas);
+
+        // Character data from Electron launcher or URL params
+        let charData = null;
+        if (window._pendingCharacter) {
+          charData = window._pendingCharacter;
+        } else {
+          const p = new URLSearchParams(window.location.search);
+          if (p.get('name')) charData = { name: p.get('name'), classId: p.get('classId') || 'warrior' };
+        }
+
+        window.bootstrapGame(canvas, charData);
       }, 300);
       return;
     }
     const [pct, msg] = steps[step++];
-    bar.style.width = pct + '%';
-    txt.textContent = msg;
-    setTimeout(advance, step < steps.length ? 200 : 0);
+    bar.style.width  = pct + '%';
+    txt.textContent  = msg;
+    setTimeout(advance, step < steps.length ? 220 : 0);
   }
 
-  // Wait for all scripts to be ready
-  window.addEventListener('load', () => setTimeout(advance, 100));
+  window.addEventListener('load', () => setTimeout(advance, 120));
 })();
 </script>
 </body>

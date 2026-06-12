@@ -24,24 +24,30 @@ class UIManager {
 <!-- HUD bars -->
 <div id="hud">
   <div id="player-frame">
-    <div id="player-name">—</div>
-    <div class="bar-row">
-      <span class="bar-label">HP</span>
-      <div class="bar hp-bar"><div id="hp-fill" class="fill"></div></div>
-      <span id="hp-text" class="bar-num">0/0</span>
-    </div>
-    <div class="bar-row">
-      <span class="bar-label">MP</span>
-      <div class="bar mp-bar"><div id="mp-fill" class="fill"></div></div>
-      <span id="mp-text" class="bar-num">0/0</span>
-    </div>
-    <div class="bar-row">
-      <span class="bar-label">XP</span>
-      <div class="bar xp-bar"><div id="xp-fill" class="fill"></div></div>
-      <span id="xp-text" class="bar-num">Lv1</span>
+    <div id="player-level-badge">Lv 1</div>
+    <div id="player-frame-inner">
+      <div id="player-portrait" title="Personaggio">⚔</div>
+      <div id="player-bars">
+        <div id="player-name">—</div>
+        <div class="bar-row">
+          <span class="bar-label">HP</span>
+          <div class="bar hp-bar"><div id="hp-fill" class="fill"></div></div>
+          <span id="hp-text" class="bar-num">0/0</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">MP</span>
+          <div class="bar mp-bar"><div id="mp-fill" class="fill"></div></div>
+          <span id="mp-text" class="bar-num">0/0</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">XP</span>
+          <div class="bar xp-bar"><div id="xp-fill" class="fill"></div></div>
+          <span id="xp-text" class="bar-num">Lv 1</span>
+        </div>
+      </div>
     </div>
   </div>
-  <div id="gold-display">💰 <span id="gold-value">0</span></div>
+  <div id="gold-display"><span id="gold-value">0</span></div>
   <div id="zone-name"></div>
 </div>
 
@@ -59,10 +65,9 @@ class UIManager {
   <div class="skill-sep"></div>
   <div class="skill-group" id="skills-potion">
     <div class="skill-slot" id="slot-potion" data-key="q">
-      <div class="skill-icon">🧪</div>
-      <div class="skill-name">Pozione</div>
-      <div class="skill-count" id="potion-count">3</div>
-      <div class="skill-cd-overlay" id="cd-potion"></div>
+      <div class="skill-icon potion-icon">🧪</div>
+      <div class="skill-count potion-count" id="potion-count">3</div>
+      <div class="skill-cd-overlay" id="cd-potion"><span class="cd-time"></span></div>
       <div class="slot-key">Q</div>
     </div>
   </div>
@@ -313,8 +318,16 @@ class UIManager {
     document.getElementById('hp-text').textContent = `${Math.ceil(p.hp)}/${p.maxHp}`;
     document.getElementById('mp-text').textContent = `${Math.ceil(p.mp)}/${p.maxMp}`;
     document.getElementById('xp-text').textContent = `Lv ${p.level}`;
-    document.getElementById('gold-value').textContent = p.gold;
-    document.getElementById('player-name').textContent = `${p.name} — ${p.className}`;
+    document.getElementById('gold-value').textContent = p.gold.toLocaleString();
+    document.getElementById('player-name').textContent = `${p.name}`;
+    const lvBadge = document.getElementById('player-level-badge');
+    if (lvBadge) lvBadge.textContent = `Lv ${p.level}`;
+    const portrait = document.getElementById('player-portrait');
+    if (portrait && p.classKey) {
+      const cls = window.GameData.CLASSES[p.classKey];
+      portrait.textContent = cls ? cls.icon : '⚔';
+      portrait.title = p.className;
+    }
 
     // Skill cooldowns
     const skills = window.GameData.CLASSES[p.classKey].skills;
