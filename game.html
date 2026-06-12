@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Regni d'Oriente — Gioca</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/game.css">
+<!-- Three.js from CDN (r158) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body class="game-body">
+
+<!-- Loading overlay -->
+<div id="loading-screen">
+  <div class="loading-content">
+    <div class="loading-title">⚔ Regni d'Oriente</div>
+    <div class="loading-bar-wrap"><div id="loading-bar"></div></div>
+    <div id="loading-text">Caricamento...</div>
+  </div>
+</div>
+
+<!-- 3D Canvas -->
+<canvas id="game-canvas"></canvas>
+
+<!-- UI Layer (all HUD, panels, chat, etc.) -->
+<div id="ui-root"></div>
+
+<!-- Scripts (order matters) -->
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/systems.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+
+<script>
+// Boot sequence with loading progress
+(function boot() {
+  const bar = document.getElementById('loading-bar');
+  const txt = document.getElementById('loading-text');
+  const steps = [
+    [10, 'Caricamento dati di gioco...'],
+    [30, 'Inizializzazione motore 3D...'],
+    [50, 'Costruzione del mondo...'],
+    [70, 'Spawn dei mostri...'],
+    [85, 'Configurazione UI...'],
+    [100, 'Pronto!'],
+  ];
+  let step = 0;
+
+  function advance() {
+    if (step >= steps.length) {
+      // All loaded — start the game
+      setTimeout(() => {
+        document.getElementById('loading-screen').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('loading-screen').style.display = 'none';
+        }, 600);
+        const canvas = document.getElementById('game-canvas');
+        window.bootstrapGame(canvas);
+      }, 300);
+      return;
+    }
+    const [pct, msg] = steps[step++];
+    bar.style.width = pct + '%';
+    txt.textContent = msg;
+    setTimeout(advance, step < steps.length ? 200 : 0);
+  }
+
+  // Wait for all scripts to be ready
+  window.addEventListener('load', () => setTimeout(advance, 100));
+})();
+</script>
+</body>
+</html>
