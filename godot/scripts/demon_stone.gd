@@ -2,6 +2,8 @@ extends StaticBody3D
 ## Pietra Demoniaca — evocatrice di mostri per tier.
 ## Prendi danni per distruggerla; evoca minion durante il combattimento.
 
+const GroundDropScript := preload("res://scripts/ground_drop.gd")
+
 @onready var name_label  : Label3D          = $NameLabel
 @onready var hp_bar_mesh : MeshInstance3D   = $HPBarMesh
 @onready var mesh_inst   : MeshInstance3D   = $StoneMesh
@@ -84,6 +86,15 @@ func _die() -> void:
 	var gold := gold_range[0] + randi() % maxi(1, gold_range[1] - gold_range[0])
 	G.gain_gold(gold)
 	G.combat_message.emit("+%d oro, +%d XP" % [gold, xp], "loot")
+	# Guaranteed material drop from this stone's zone
+	var mat_ids := ["mat_z%d_a" % tier, "mat_z%d_b" % tier]
+	for mid in mat_ids:
+		if Data.ITEMS.has(mid) and randf() < 0.65:
+			var qty := 1 + randi() % 3
+			var offset := Vector3(randf_range(-1.5, 1.5), 0.2, randf_range(-1.5, 1.5))
+			var node := GroundDropScript.new()
+			get_parent().add_child(node)
+			node.setup(mid, qty, global_position + offset)
 	# Destroy minions
 	for m in minions:
 		if is_instance_valid(m):

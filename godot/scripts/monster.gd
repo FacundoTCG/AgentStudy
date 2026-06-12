@@ -2,6 +2,8 @@ extends CharacterBody3D
 ## Monster — AI con state machine: idle / patrol / chase / attack / dead
 ## Pathfinding via NavigationAgent3D (baked dal World).
 
+const GroundDropScript := preload("res://scripts/ground_drop.gd")
+
 const GRAVITY       := 18.0
 const NOTICE_RANGE  := 14.0
 const LOSE_RANGE    := 28.0
@@ -411,24 +413,54 @@ func _drop_loot(drops: Array) -> void:
 				var qty := 1
 				if entry.has("qty"):
 					qty = entry["qty"][0] + randi() % maxi(1, entry["qty"][1] - entry["qty"][0] + 1)
-				G.add_item(entry["id"], qty)
-				G.on_collect(entry["id"], qty)
-				G.combat_message.emit("Loot: %s x%d" % [Data.ITEMS[entry["id"]]["name"], qty], "loot")
-				_spawn_drop_orb(entry["id"])
+				_spawn_ground_drop(entry["id"], qty)
 		elif entry.has("pool"):
 			if randf() < entry.get("chance", 0.08):
 				var pool: Array = Data.DROP_POOLS.get(entry["pool"], [])
 				if pool.size() > 0:
-					var item_id: String = pool[randi() % pool.size()]
-					G.add_item(item_id)
-					G.combat_message.emit("Loot: %s" % Data.ITEMS[item_id]["name"], "loot")
-					_spawn_drop_orb(item_id)
+					_spawn_ground_drop(pool[randi() % pool.size()], 1)
 		elif entry.has("gem"):
 			if randf() < entry.get("chance", 0.03):
-				var gem_id := Data.random_gem(entry["gem"])
-				G.add_item(gem_id)
-				G.combat_message.emit("Loot: %s" % Data.ITEMS[gem_id]["name"], "loot")
-				_spawn_drop_orb(gem_id)
+				_spawn_ground_drop(Data.random_gem(entry["gem"]), 1)
+
+
+func _spawn_ground_drop(item_id: String, qty: int) -> void:
+	if not Data.ITEMS.has(item_id):
+		return
+	var offset := Vector3(randf_range(-1.2, 1.2), 0.15, randf_range(-1.2, 1.2))
+	var drop_pos := global_position + offset
+	var node := GroundDropScript.new()
+	get_parent().add_child(node)
+	node.setup(item_id, qty, drop_pos)
+	# Beam effect for rare+ stays via GroundDrop's own light
+	_maybe_spawn_beam(item_id, drop_pos)
+
+
+func _maybe_spawn_beam(item_id: String, drop_pos: Vector3) -> void:
+	var def := Data.ITEMS.get(item_id, {})
+	var quality := def.get("quality", "common")
+	if not quality in ["rare", "epic", "legendary"]:
+		return
+	var q_col: Color = Data.QUALITY_COLORS.get(quality, Color(0.8, 0.8, 0.8))
+	var beam_m := CylinderMesh.new()
+	beam_m.top_radius = 0.18; beam_m.bottom_radius = 0.08; beam_m.height = 12.0
+	var beam_mat := StandardMaterial3D.new()
+	beam_mat.albedo_color = Color(q_col.r, q_col.g, q_col.b, 0.45)
+	beam_mat.emission_enabled = true
+	beam_mat.emission = q_col * (1.4 if quality == "legendary" else 0.9)
+	beam_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	beam_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	beam_m.material = beam_mat
+	var beam := MeshInstance3D.new()
+	beam.mesh = beam_m
+	beam.position = drop_pos + Vector3(0, 6.0, 0)
+	get_parent().add_child(beam)
+	var tw := get_tree().create_tween()
+	tw.tween_property(beam, "modulate:a", 0.0, 0.6)
+	tw.tween_property(beam, "modulate:a", 0.9, 0.6)
+	tw.tween_interval(55.0)
+	tw.tween_property(beam, "modulate:a", 0.0, 1.0)
+	tw.tween_callback(beam.queue_free)
 
 
 func _spawn_drop_orb(item_id: String) -> void:

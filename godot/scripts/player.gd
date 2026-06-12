@@ -48,6 +48,11 @@ var is_sprinting    := false
 const SPRINT_MULT     := 1.65
 const SPRINT_MP_DRAIN := 8.0           # MP/s while sprinting
 
+var combo_count := 0
+var combo_timer := 0.0
+const COMBO_WINDOW := 1.8              # seconds between hits to keep chain
+const COMBO_FINISHER_MULT := 1.9       # damage multiplier on 3rd hit
+
 
 func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -232,9 +237,16 @@ func _auto_attack_active() -> bool:
 
 func _perform_attack() -> void:
 	var pd := G.player_data
-	var dmg := G.calc_damage(pd, target_mob.get_stats())
+	combo_count += 1
+	combo_timer = COMBO_WINDOW
+	var is_finisher := combo_count >= 3
+	var mult := COMBO_FINISHER_MULT if is_finisher else 1.0
+	var dmg := G.calc_damage(pd, target_mob.get_stats(), mult)
 	target_mob.take_damage(dmg, self)
-	if G.last_crit:
+	if is_finisher:
+		combo_count = 0
+		G.combat_message.emit("COMBO! -%d" % dmg, "crit")
+	elif G.last_crit:
 		G.combat_message.emit("CRITICO! -%d" % dmg, "crit")
 	atk_cd = ATK_CD
 	if anim and anim.has_animation("attack"):
@@ -553,6 +565,10 @@ func _tick_cooldowns(delta: float) -> void:
 	pot_cd = maxf(0.0, pot_cd - delta)
 	for i in 8:
 		skill_cds[i] = maxf(0.0, skill_cds[i] - delta)
+	if combo_count > 0:
+		combo_timer -= delta
+		if combo_timer <= 0.0:
+			combo_count = 0
 
 
 func _tick_regen(delta: float) -> void:
