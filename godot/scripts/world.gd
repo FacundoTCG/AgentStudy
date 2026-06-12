@@ -58,6 +58,7 @@ func _ready() -> void:
 	_spawn_stones()
 	_spawn_dungeon_entrances()
 	_build_dungeon_rooms()
+	_build_zone_teleporters()
 	_bake_nav()
 
 	# Fishing system
@@ -696,6 +697,157 @@ func _build_dungeon_rooms() -> void:
 		exit_node.teleport_dest = entrance_world_pos + Vector3(0, 0.5, 5.0)
 		add_child(exit_node)
 		exit_node.global_position = rc + Vector3(0, 1.5, ROOM_D * 0.5 - 4.0)
+
+		# Treasure chests — 2 per room, in corners
+		var dungeon_tier := i + 1
+		for cx in [-14.0, 14.0]:
+			_spawn_treasure_chest(rc + Vector3(cx, 0.5, -15.0), dungeon_tier)
+
+
+func _build_zone_teleporters() -> void:
+	# Teleport pillars in a ring around the village — one per zone
+	var tele_mat := StandardMaterial3D.new()
+	tele_mat.albedo_color = Color(0.2, 0.55, 0.9)
+	tele_mat.emission_enabled = true
+	tele_mat.emission = Color(0.3, 0.65, 1.0) * 0.6
+	tele_mat.roughness = 0.3
+
+	for zone in Data.ZONES:
+		var z_center: Vector2 = zone["center"]
+		var tele_pos := z_center.normalized() * 180.0
+		var wy := _get_height(tele_pos.x, tele_pos.y)
+		var base := Vector3(tele_pos.x, wy, tele_pos.y)
+
+		# Pillar
+		var pm := CylinderMesh.new(); pm.top_radius = 0.3; pm.bottom_radius = 0.4; pm.height = 3.5
+		var pmi := MeshInstance3D.new(); pmi.mesh = pm; pmi.material_override = tele_mat
+		pmi.position = base + Vector3(0, 1.75, 0)
+		add_child(pmi)
+		# Glowing orb on top
+		var om := SphereMesh.new(); om.radius = 0.35; om.height = 0.7
+		var omat := StandardMaterial3D.new()
+		omat.albedo_color = Color(0.4, 0.7, 1.0, 0.9)
+		omat.emission_enabled = true
+		omat.emission = Color(0.4, 0.75, 1.0) * 1.5
+		omat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		var omi := MeshInstance3D.new(); omi.mesh = om; omi.material_override = omat
+		omi.position = base + Vector3(0, 3.85, 0)
+		add_child(omi)
+		# Zone name label
+		var lbl := Label3D.new()
+		lbl.text = "↑ %s\n[ F ] Teletrasporto" % zone["name"]
+		lbl.font_size = 22
+		lbl.modulate = Color(0.7, 0.9, 1.0)
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.no_depth_test = true
+		lbl.position = base + Vector3(0, 5.0, 0)
+		add_child(lbl)
+		# Light
+		var gl := OmniLight3D.new()
+		gl.light_color = Color(0.4, 0.75, 1.0)
+		gl.light_energy = 1.4; gl.omni_range = 7.0
+		gl.position = base + Vector3(0, 3.5, 0)
+		add_child(gl)
+
+		# Trigger area
+		var area := Area3D.new()
+		area.position = base + Vector3(0, 1.0, 0)
+		area.collision_layer = 0; area.collision_mask = 2
+		var coll := CollisionShape3D.new()
+		var sph := SphereShape3D.new(); sph.radius = 2.2
+		coll.shape = sph
+		area.add_child(coll)
+		var dest := Vector3(z_center.x * 0.6, 0, z_center.y * 0.6)
+		var z_name: String = zone["name"]
+		area.body_entered.connect(func(body: Node3D):
+			if not body.is_in_group("player"):
+				return
+			# Only if F is held (or auto-prompt)
+			var dest_y := _get_height(dest.x, dest.z) + 2.0
+			body.global_position = Vector3(dest.x, dest_y, dest.z)
+			G.notification.emit("Teletrasportato: %s!" % z_name, "success"))
+		add_child(area)
+
+
+func _spawn_treasure_chest(pos: Vector3, tier: int) -> void:
+	var chest_area := Area3D.new()
+	chest_area.position = pos
+	chest_area.collision_layer = 0
+	chest_area.collision_mask  = 2
+
+	var coll := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(1.2, 1.0, 0.8)
+	coll.shape = box
+	chest_area.add_child(coll)
+
+	# Visual: dark wood box body
+	var body_m := BoxMesh.new(); body_m.size = Vector3(1.0, 0.55, 0.7)
+	var body_mat := StandardMaterial3D.new()
+	body_mat.albedo_color = Color(0.28, 0.18, 0.08); body_mat.roughness = 0.85
+	var body_mi := MeshInstance3D.new(); body_mi.mesh = body_m; body_mi.material_override = body_mat
+	body_mi.position = Vector3(0, 0, 0)
+	chest_area.add_child(body_mi)
+	# Lid
+	var lid_m := BoxMesh.new(); lid_m.size = Vector3(1.0, 0.28, 0.7)
+	var lid_mat := StandardMaterial3D.new()
+	lid_mat.albedo_color = Color(0.35, 0.22, 0.10); lid_mat.roughness = 0.8
+	var lid_mi := MeshInstance3D.new(); lid_mi.mesh = lid_m; lid_mi.material_override = lid_mat
+	lid_mi.position = Vector3(0, 0.40, 0)
+	chest_area.add_child(lid_mi)
+	# Gold trim on lid
+	var trim_mat := StandardMaterial3D.new()
+	trim_mat.albedo_color = Color(0.85, 0.7, 0.2)
+	trim_mat.emission_enabled = true; trim_mat.emission = Color(0.6, 0.5, 0.1) * 0.4
+	var trim_m := BoxMesh.new(); trim_m.size = Vector3(1.02, 0.06, 0.72)
+	var trim_mi := MeshInstance3D.new(); trim_mi.mesh = trim_m; trim_mi.material_override = trim_mat
+	trim_mi.position = Vector3(0, 0.27, 0)
+	chest_area.add_child(trim_mi)
+	# Label
+	var lbl := Label3D.new()
+	lbl.text = "[ F ] Scrigno"
+	lbl.font_size = 20
+	lbl.modulate = Color(0.85, 0.7, 0.25)
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.no_depth_test = true
+	lbl.position = Vector3(0, 0.9, 0)
+	chest_area.add_child(lbl)
+	# Light
+	var gl := OmniLight3D.new()
+	gl.light_color = Color(0.9, 0.75, 0.35)
+	gl.light_energy = 0.9; gl.omni_range = 4.0
+	gl.position = Vector3(0, 0.8, 0)
+	chest_area.add_child(gl)
+
+	var opened := false
+	chest_area.body_entered.connect(func(body: Node3D):
+		if not body.is_in_group("player") or opened:
+			return
+		if not Input.is_key_pressed(KEY_F):
+			return
+		opened = true
+		lbl.visible = false
+		# Animate lid open
+		var tw := get_tree().create_tween()
+		tw.tween_property(lid_mi, "rotation_degrees:x", -90.0, 0.4).set_trans(Tween.TRANS_BACK)
+		tw.tween_interval(0.3)
+		# Loot drop
+		var t_clamped := clampi(tier, 1, 8)
+		var pool := Data.DROP_POOLS.get(t_clamped, [])
+		var gold := 200 * tier + randi() % (300 * tier)
+		G.gain_gold(gold)
+		G.combat_message.emit("💰 Scrigno: +%d oro!" % gold, "loot")
+		for _j in 2:
+			if pool.size() > 0:
+				var gd_script := load("res://scripts/ground_drop.gd")
+				var drop_node := gd_script.new()
+				get_parent().add_child(drop_node) if get_parent() else add_child(drop_node)
+				var off := Vector3(randf_range(-0.8, 0.8), 0.3, randf_range(-0.8, 0.8))
+				drop_node.setup(pool[randi() % pool.size()], 1, chest_area.global_position + off)
+		tw.tween_interval(5.0)
+		tw.tween_callback(chest_area.queue_free))
+
+	add_child(chest_area)
 
 
 func _on_mob_killed(mob_id: String, mob_name: String, _xp: int, _gold: int) -> void:
