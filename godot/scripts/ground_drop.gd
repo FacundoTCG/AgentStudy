@@ -86,8 +86,23 @@ func _on_body_entered(body: Node3D) -> void:
 		return
 	if G.add_item(item_id, item_qty):
 		var def := Data.ITEMS.get(item_id, {})
+		var quality := def.get("quality", "common")
 		G.notification.emit("Raccolto: %s" % def.get("name", "?"), "success")
 		G.on_collect(item_id, item_qty)
+		# Legendary drop world announcement
+		if quality == "legendary":
+			_announce_legendary_drop(def)
+		elif quality == "epic":
+			G.combat_message.emit("★ EPICO: %s!" % def.get("name", "?"), "crit")
 		queue_free()
 	else:
 		G.notification.emit("Inventario pieno!", "error")
+
+
+func _announce_legendary_drop(def: Dictionary) -> void:
+	var hud_arr := get_tree().get_nodes_in_group("hud_node")
+	if hud_arr.size() == 0:
+		return
+	var hud := hud_arr[0]
+	if hud.has_method("show_legendary_announcement"):
+		hud.show_legendary_announcement(def.get("name", "?"))

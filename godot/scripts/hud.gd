@@ -535,6 +535,26 @@ func _show_levelup_flash(lvl: int) -> void:
 	tw.tween_callback(overlay.queue_free)
 
 
+func show_legendary_announcement(item_name: String) -> void:
+	var lbl := Label.new()
+	lbl.text = "✦ OGGETTO LEGGENDARIO ✦\n%s" % item_name.to_upper()
+	lbl.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	lbl.offset_top = 180; lbl.offset_bottom = 240
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 20)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.72, 0.1))
+	lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
+	lbl.add_theme_constant_override("shadow_offset_x", 2)
+	lbl.add_theme_constant_override("shadow_offset_y", 2)
+	lbl.modulate.a = 0.0
+	add_child(lbl)
+	var tw := create_tween()
+	tw.tween_property(lbl, "modulate:a", 1.0, 0.35)
+	tw.tween_interval(3.5)
+	tw.tween_property(lbl, "modulate:a", 0.0, 0.7)
+	tw.tween_callback(lbl.queue_free)
+
+
 func show_boss_announcement(boss_name: String) -> void:
 	var lbl := Label.new()
 	lbl.text = "⚔  %s  È APPARSO!  ⚔" % boss_name.to_upper()

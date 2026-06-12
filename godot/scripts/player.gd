@@ -34,6 +34,7 @@ var pot_cd    := 0.0
 
 var target_mob   : Node3D = null
 var is_dead      := false
+var _target_ring : MeshInstance3D = null
 var move_target  : Vector3 = Vector3.ZERO
 var using_nav    := false
 
@@ -136,6 +137,7 @@ func _physics_process(delta: float) -> void:
 	_tick_cooldowns(delta)
 	_tick_regen(delta)
 	_tick_statuses(delta)
+	_update_target_ring()
 	G.tick_buffs(delta)
 
 	var pd := G.player_data
@@ -297,6 +299,7 @@ func use_skill(index: int) -> void:
 	pd["mp"] -= sk["mp"]
 	skill_cds[index] = sk["cd"]
 	_flash_skill_slot(index)
+	_spawn_skill_effect(sk)
 
 	# Skill level damage bonus (+8% per livello)
 	var sk_lvl: int = pd["skill_lvls"].get(sk["id"], 1)
@@ -718,7 +721,79 @@ func get_stats() -> Dictionary:
 	return G.player_data
 
 
+func _update_target_ring() -> void:
+	var valid_target := is_instance_valid(target_mob) and target_mob.has_method("take_damage")
+	if not valid_target:
+		if is_instance_valid(_target_ring):
+			_target_ring.queue_free()
+		_target_ring = null
+		return
+	# Create ring if missing
+	if not is_instance_valid(_target_ring):
+		_target_ring = MeshInstance3D.new()
+		var mesh := TorusMesh.new()
+		mesh.inner_radius = 0.55; mesh.outer_radius = 0.70
+		_target_ring.mesh = mesh
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(1.0, 0.25, 0.15, 0.75)
+		mat.emission_enabled = true
+		mat.emission = Color(1.0, 0.3, 0.1) * 0.5
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_target_ring.material_override = mat
+		get_parent().add_child(_target_ring)
+	# Track position
+	var tp := target_mob.global_position
+	_target_ring.global_position = Vector3(tp.x, tp.y + 0.06, tp.z)
+	_target_ring.scale = target_mob.scale * 1.1
+
+
 func _flash_skill_slot(index: int) -> void:
 	var huds := get_tree().get_nodes_in_group("hud_node")
 	if huds.size() > 0 and huds[0].has_method("flash_skill"):
 		huds[0].flash_skill(index)
+
+
+func _spawn_skill_effect(sk: Dictionary) -> void:
+	var cls := G.player_data.get("class", "guerriero")
+	var kind := sk.get("kind", "melee")
+	# Color by class
+	var colors := {"guerriero": Color(0.95, 0.55, 0.15), "ninja": Color(0.25, 0.90, 0.40),
+		"mago": Color(0.55, 0.30, 1.00), "sciamano": Color(0.30, 0.80, 0.95)}
+	var col := colors.get(cls, Color(1.0, 0.85, 0.3))
+
+	var particles := CPUParticles3D.new()
+	particles.emitting = true
+	particles.one_shot = true
+	particles.explosiveness = 0.85
+	particles.lifetime = 0.55
+	particles.amount = 28 if kind in ["aoe", "buff"] else 14
+	particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	particles.emission_sphere_radius = 0.5
+	particles.gravity = Vector3(0, 2, 0)
+	particles.initial_velocity_min = 3.0
+	particles.initial_velocity_max = 7.0
+	particles.scale_amount_min = 0.08
+	particles.scale_amount_max = 0.22
+	particles.color = col
+	match kind:
+		"aoe":
+			particles.emission_sphere_radius = 1.8
+			particles.amount = 42
+		"buff":
+			col = Color(0.9, 0.95, 0.35)
+			particles.color = col
+			particles.gravity = Vector3(0, 5, 0)
+		"heal":
+			col = Color(0.25, 0.95, 0.45)
+			particles.color = col
+			particles.gravity = Vector3(0, 6, 0)
+			particles.amount = 20
+		"dash":
+			particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+			particles.emission_box_extents = Vector3(0.3, 0.5, 0.8)
+	particles.global_position = global_position + Vector3(0, 1.0, 0)
+	get_parent().add_child(particles)
+	var tw := get_tree().create_tween()
+	tw.tween_interval(1.5)
+	tw.tween_callback(particles.queue_free)
