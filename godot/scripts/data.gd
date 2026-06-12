@@ -332,6 +332,24 @@ func _build_items() -> void:
 		ITEMS[f[0]] = {"id": f[0], "name": f[1], "kind": "fish",
 			"hp_restore": f[2], "quality": f[4], "price": f[3], "stack": 20}
 
+	# Libri di Abilità — uno per ogni skill (usabili solo dalla classe giusta)
+	var book_defs := {
+		"guerriero": ["fendente","fendente_rotante","grido_guerra","carica","spaccaossa","muro_scudo","terremoto","furia_berserker"],
+		"ninja":     ["pugnalata","raffica","passo_ombra","lama_veleno","fumogena","danza_lame","assassinio","pioggia_kunai"],
+		"mago":      ["dardo_fuoco","sfera_ghiaccio","nova_arcana","scudo_magico","drenaggio","catena_fulmini","maledizione","meteorite"],
+		"sciamano":  ["scossa_terra","cura_natura","benedizione","totem_fuoco","radici","tempesta","ira_natura","fulmine_sacro"],
+	}
+	for cls in book_defs.keys():
+		for sk_id in book_defs[cls]:
+			if not SKILLS.has(sk_id):
+				continue
+			var bid := "book_%s" % sk_id
+			var sk_name: String = SKILLS[sk_id].get("name", sk_id)
+			ITEMS[bid] = {"id": bid, "name": "Libro: %s" % sk_name,
+				"kind": "skill_book", "skill_id": sk_id, "class": cls,
+				"quality": "rare", "price": 1200, "stack": 1,
+				"desc": "Potenzia l'abilità %s di 1 livello (max 10)." % sk_name}
+
 
 # ───────────────────────────── ZONE (8) ─────────────────────────────
 
@@ -440,12 +458,20 @@ func _mob_drops(z: int, r: int) -> Array:
 
 func _boss_drops(z: int) -> Array:
 	var t: int = clampi(z, 1, 8)
-	return [
+	var drops := [
 		{"pool": t, "chance": 1.0}, {"pool": t, "chance": 0.6},
 		{"gem": clampi(ceili(t / 2.0) + 1, 1, 5), "chance": 0.5},
 		{"id": "pietra_raffinazione", "chance": 0.4, "qty": [1, 2]},
 		{"id": "pergamena_benedizione", "chance": 0.15, "qty": [1, 1]},
 	]
+	# 20% chance to drop a random skill book matching zone tier
+	var all_books := []
+	for id in ITEMS.keys():
+		if ITEMS[id].get("kind") == "skill_book":
+			all_books.append(id)
+	if all_books.size() > 0:
+		drops.append({"id": all_books[randi() % all_books.size()], "chance": 0.20})
+	return drops
 
 
 func random_gem(grade: int) -> String:
@@ -531,7 +557,15 @@ func _build_shops() -> void:
 	for i in range(1, 19):
 		hairs.append("hair_%02d" % i)
 	SHOPS["hair_shop"] = {"name": "Acconciature", "items": hairs}
-	SHOPS["scroll_shop"] = {"name": "Pergamene", "items": ["pietra_raffinazione", "pergamena_benedizione", "pergamena_incantamento"]}
+	var scroll_items := ["pietra_raffinazione", "pergamena_benedizione", "pergamena_incantamento"]
+	# First skill book for each class available in scroll shop
+	for cls in ["guerriero","ninja","mago","sciamano"]:
+		var sk_ids := CLASSES.get(cls, {}).get("skills", [])
+		if sk_ids.size() > 0:
+			var bid := "book_%s" % sk_ids[0]
+			if ITEMS.has(bid):
+				scroll_items.append(bid)
+	SHOPS["scroll_shop"] = {"name": "Pergamene & Libri", "items": scroll_items}
 	SHOPS["food_shop"] = {"name": "Cucina di Nonna Mei", "items": ["cibo_01", "cibo_02", "cibo_03", "cibo_04", "cibo_05", "cibo_06"]}
 	var jwl := []
 	for i in range(1, 6):

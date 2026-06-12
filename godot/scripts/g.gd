@@ -437,6 +437,25 @@ func use_item_at(inv_slot: int) -> void:
 				notification.emit("Il Pesce Abissale ti osserva in silenzio...", "info")
 			remove_item_at(inv_slot, 1)
 			player_stats_changed.emit()
+		"skill_book":
+			var target_class: String = def.get("class", "")
+			if target_class != "" and target_class != player_data.get("class", ""):
+				notification.emit("Questo libro è per un'altra classe!", "error")
+				return
+			var sk_id: String = def.get("skill_id", "")
+			if sk_id == "":
+				return
+			var lvl := player_data.get("skill_lvls", {}).get(sk_id, 1)
+			if lvl >= 10:
+				notification.emit("Abilità già al livello massimo (10).", "error")
+				return
+			if not player_data.has("skill_lvls"):
+				player_data["skill_lvls"] = {}
+			player_data["skill_lvls"][sk_id] = lvl + 1
+			remove_item_at(inv_slot, 1)
+			player_stats_changed.emit()
+			notification.emit("Abilità %s → Lv %d!" % [Data.SKILLS.get(sk_id, {}).get("name", sk_id), lvl + 1], "success")
+			combat_message.emit("📖 ABILITÀ POTENZIATA!", "loot")
 
 
 func tick_buffs(delta: float) -> void:

@@ -314,7 +314,7 @@ func _show_item_context(slot_idx: int, inst: Dictionary, def: Dictionary) -> voi
 		var eq_btn := _wood_button("⚔ Equipaggia")
 		eq_btn.pressed.connect(func(): popup.queue_free(); G.equip_item(slot_idx))
 		vbox.add_child(eq_btn)
-	if def.get("kind") in ["potion", "food", "fish"]:
+	if def.get("kind") in ["potion", "food", "fish", "skill_book"]:
 		var use_btn := _wood_button("✨ Usa")
 		use_btn.pressed.connect(func(): popup.queue_free(); G.use_item_at(slot_idx))
 		vbox.add_child(use_btn)
@@ -351,7 +351,7 @@ func _item_emoji(def: Dictionary) -> String:
 		"boots": "👢", "bracelet": "📿", "necklace": "📿", "earring": "💎",
 		"ring": "💍", "gem": "💠", "mount": "🐎", "hair": "💇",
 		"potion": "🧪", "food": "🍖", "material": "📦", "scroll": "📜",
-		"fish": "🐟", "fishing_rod": "🎣"}
+		"fish": "🐟", "fishing_rod": "🎣", "skill_book": "📖"}
 	return emojis.get(def.get("slot", def.get("kind", "")), "❓")
 
 
