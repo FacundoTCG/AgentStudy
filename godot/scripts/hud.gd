@@ -44,6 +44,9 @@ const CLASS_ICONS := {
 }
 
 
+var _damage_flash_overlay : ColorRect = null
+var _status_tint_overlay  : ColorRect = null
+
 func _ready() -> void:
 	add_to_group("hud_node")
 	G.player_stats_changed.connect(_update_hud)
@@ -53,6 +56,7 @@ func _ready() -> void:
 	target_frame.visible = false
 	_build_skill_bar()
 	_update_hud()
+	_build_screen_overlays()
 	# Share the main 3D world with the minimap SubViewport
 	if minimap_vp:
 		minimap_vp.world_3d = get_viewport().world_3d
@@ -80,6 +84,7 @@ func _process(delta: float) -> void:
 	_update_buffs_ui()
 	_update_zone()
 	_update_time_label()
+	_update_status_tint()
 	# Hide chat input if player pressed Escape
 	if chat_input and chat_input.has_focus() and Input.is_action_just_pressed("ui_cancel"):
 		chat_input.visible = false
@@ -419,6 +424,8 @@ func _update_buffs_ui() -> void:
 # ── Combat log ────────────────────────────────────────────────
 
 func _add_combat_msg(text: String, kind: String) -> void:
+	if kind == "damage_received":
+		_flash_damage()
 	var lbl := Label.new()
 	lbl.text = text
 	match kind:
@@ -496,6 +503,49 @@ func show_death_overlay(respawn_secs: float) -> void:
 	tw.tween_interval(respawn_secs)
 	tw.tween_property(overlay, "color:a", 0.0, 0.5)
 	tw.tween_callback(overlay.queue_free)
+
+
+func _build_screen_overlays() -> void:
+	# Damage flash (red)
+	_damage_flash_overlay = ColorRect.new()
+	_damage_flash_overlay.color = Color(0.85, 0.0, 0.0, 0.0)
+	_damage_flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_damage_flash_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_damage_flash_overlay)
+	# Status tint (changes color based on active status effects)
+	_status_tint_overlay = ColorRect.new()
+	_status_tint_overlay.color = Color(0.0, 0.8, 0.0, 0.0)
+	_status_tint_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_status_tint_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_status_tint_overlay)
+
+
+func _flash_damage() -> void:
+	if _damage_flash_overlay == null:
+		return
+	_damage_flash_overlay.color.a = 0.38
+	var tw := create_tween()
+	tw.tween_property(_damage_flash_overlay, "color:a", 0.0, 0.5)
+
+
+func _update_status_tint() -> void:
+	if _status_tint_overlay == null or player_node == null:
+		return
+	# Check active status effects on player
+	var active_statuses := player_node.get("active_statuses") if player_node.get("active_statuses") != null else {}
+	if active_statuses is Dictionary and active_statuses.size() > 0:
+		if active_statuses.has("poison"):
+			_status_tint_overlay.color = Color(0.10, 0.75, 0.15, 0.18)
+		elif active_statuses.has("stun") or active_statuses.has("root"):
+			_status_tint_overlay.color = Color(0.65, 0.65, 0.65, 0.22)
+		elif active_statuses.has("slow"):
+			_status_tint_overlay.color = Color(0.15, 0.35, 0.85, 0.15)
+		elif active_statuses.has("weaken"):
+			_status_tint_overlay.color = Color(0.70, 0.15, 0.70, 0.15)
+		else:
+			_status_tint_overlay.color.a = 0.0
+	else:
+		_status_tint_overlay.color.a = 0.0
 
 
 func _find_player() -> Node3D:

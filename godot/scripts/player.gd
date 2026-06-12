@@ -41,6 +41,7 @@ var hp_regen_t  := 0.0
 var mp_regen_t  := 0.0
 var weapon_holder  : Node3D = null
 var mount_visual   : Node3D = null
+var active_statuses : Dictionary = {}   # sid → remaining_time
 
 
 func _ready() -> void:
@@ -124,6 +125,7 @@ func _physics_process(delta: float) -> void:
 
 	_tick_cooldowns(delta)
 	_tick_regen(delta)
+	_tick_statuses(delta)
 	G.tick_buffs(delta)
 
 	var pd := G.player_data
@@ -496,6 +498,28 @@ func _respawn() -> void:
 	G.player_data["hp"] = G.player_data["max_hp"]
 	G.player_data["mp"] = G.player_data["max_mp"]
 	G.player_stats_changed.emit()
+
+
+func apply_status(sid: String, dur: float) -> void:
+	active_statuses[sid] = dur
+	var icons := {"poison": "☠", "slow": "❄", "stun": "⭐", "root": "🌿", "weaken": "💀"}
+	G.notification.emit("Stato: %s (%s)" % [sid.capitalize(), icons.get(sid, "?")], "error")
+
+
+func _tick_statuses(delta: float) -> void:
+	var to_rem := []
+	for sid in active_statuses.keys():
+		active_statuses[sid] -= delta
+		if sid == "poison" and Engine.get_frames_drawn() % 90 == 0:
+			var pd := G.player_data
+			var dmg := maxi(1, int(pd["max_hp"] * 0.015))
+			pd["hp"] = maxi(0, pd["hp"] - dmg)
+			G.combat_message.emit("☠ -%d (veleno)" % dmg, "damage_received")
+			G.player_stats_changed.emit()
+		if active_statuses[sid] <= 0.0:
+			to_rem.append(sid)
+	for sid in to_rem:
+		active_statuses.erase(sid)
 
 
 func _tick_cooldowns(delta: float) -> void:

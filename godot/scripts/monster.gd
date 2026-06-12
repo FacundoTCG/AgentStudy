@@ -269,6 +269,13 @@ func _perform_attack() -> void:
 	var raw_dmg := atk + randi() % maxi(1, atk / 4)
 	if player_ref.has_method("take_damage"):
 		player_ref.take_damage(raw_dmg)
+	# Elites/bosses may apply status effects to the player
+	if (is_boss or champion) and player_ref.has_method("apply_status"):
+		var roll := randf()
+		if roll < 0.15:
+			player_ref.apply_status("slow", 3.0)
+		elif roll < 0.22 and is_boss:
+			player_ref.apply_status("poison", 5.0)
 	if anim and anim.has_animation("attack"):
 		anim.play("attack")
 
@@ -460,6 +467,40 @@ func _spawn_drop_orb(item_id: String) -> void:
 	var tw2 := get_tree().create_tween()
 	tw2.tween_interval(8.0)
 	tw2.tween_callback(lbl.queue_free)
+
+	# Light beam for rare+ items (iconic Metin2 drop effect)
+	var quality := def.get("quality", "common")
+	if quality in ["rare", "epic", "legendary"]:
+		var beam_m := CylinderMesh.new()
+		beam_m.top_radius = 0.18; beam_m.bottom_radius = 0.08; beam_m.height = 12.0
+		var beam_mat := StandardMaterial3D.new()
+		beam_mat.albedo_color = Color(q_col.r, q_col.g, q_col.b, 0.45)
+		beam_mat.emission_enabled = true
+		beam_mat.emission = q_col * (1.4 if quality == "legendary" else 0.9)
+		beam_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		beam_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		beam_m.material = beam_mat
+		var beam := MeshInstance3D.new()
+		beam.mesh = beam_m
+		beam.position = orb.position + Vector3(0, 6.0, 0)
+		get_parent().add_child(beam)
+		var tw3 := get_tree().create_tween()
+		tw3.tween_property(beam, "modulate:a", 0.0, 0.6)
+		tw3.tween_property(beam, "modulate:a", 0.9, 0.6)
+		tw3.tween_interval(6.0)
+		tw3.tween_property(beam, "modulate:a", 0.0, 1.0)
+		tw3.tween_callback(beam.queue_free)
+		# OmniLight at drop location
+		var light := OmniLight3D.new()
+		light.light_color = q_col
+		light.light_energy = 1.8 if quality == "legendary" else 1.2
+		light.omni_range = 6.0
+		light.shadow_enabled = false
+		light.position = orb.position + Vector3(0, 0.5, 0)
+		get_parent().add_child(light)
+		var tw4 := get_tree().create_tween()
+		tw4.tween_interval(7.8)
+		tw4.tween_callback(light.queue_free)
 
 
 func _despawn() -> void:
