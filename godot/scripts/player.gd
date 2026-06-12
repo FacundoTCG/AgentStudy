@@ -235,6 +235,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Tab: cycle target
 	if Input.is_action_just_pressed("target_nearest"):
 		_target_nearest()
+	# G: fishing
+	if event is InputEventKey and event.pressed and event.keycode == KEY_G:
+		var fish_arr := get_tree().get_nodes_in_group("fishing_system")
+		if fish_arr.size() > 0:
+			fish_arr[0].handle_input()
+		get_viewport().set_input_as_handled()
 
 
 func use_skill(index: int) -> void:

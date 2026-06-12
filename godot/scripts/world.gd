@@ -12,6 +12,7 @@ const MOB_DENSITY := 0.0025   # mob per m^2 per zona
 const STONE_PER_ZONE := 2
 
 const DungeonEntranceScript := preload("res://scripts/dungeon_entrance.gd")
+const FishingScript         := preload("res://scripts/fishing.gd")
 
 @onready var nav_region : NavigationRegion3D = $NavigationRegion3D
 
@@ -49,6 +50,10 @@ func _ready() -> void:
 	_spawn_dungeon_entrances()
 	_build_dungeon_rooms()
 	_bake_nav()
+
+	# Fishing system
+	var fishing_sys := FishingScript.new()
+	add_child(fishing_sys)
 
 	# Spawn player
 	if player_scene:

@@ -280,7 +280,7 @@ func _on_inv_slot_press(slot_idx: int) -> void:
 	# Show context: equip / use / drop
 	if def.has("slot"):
 		G.equip_item(slot_idx)
-	elif def.get("kind") in ["potion", "food"]:
+	elif def.get("kind") in ["potion", "food", "fish"]:
 		G.use_item_at(slot_idx)
 
 
@@ -293,7 +293,8 @@ func _item_emoji(def: Dictionary) -> String:
 	var emojis := {"weapon": "⚔", "body": "🛡", "head": "🪖", "shield": "🛡",
 		"boots": "👢", "bracelet": "📿", "necklace": "📿", "earring": "💎",
 		"ring": "💍", "gem": "💠", "mount": "🐎", "hair": "💇",
-		"potion": "🧪", "food": "🍖", "material": "📦", "scroll": "📜"}
+		"potion": "🧪", "food": "🍖", "material": "📦", "scroll": "📜",
+		"fish": "🐟", "fishing_rod": "🎣"}
 	return emojis.get(def.get("slot", def.get("kind", "")), "❓")
 
 

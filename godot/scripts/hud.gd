@@ -135,7 +135,7 @@ func _build_skill_bar() -> void:
 
 	for i in skill_ids.size():
 		var sk: Dictionary = Data.SKILLS.get(skill_ids[i], {})
-		var slot := _make_skill_slot(i + 1, sk)
+		var slot := _make_skill_slot(i + 1, sk, skill_ids[i])
 		skill_bar.add_child(slot)
 		skill_slots.append(slot)
 		skill_cds_ui.append(slot.get_node("CDOverlay"))
@@ -151,7 +151,7 @@ func _build_skill_bar() -> void:
 	skill_bar.add_child(pot_slot)
 
 
-func _make_skill_slot(hotkey: int, sk: Dictionary) -> PanelContainer:
+func _make_skill_slot(hotkey: int, sk: Dictionary, sk_id: String = "") -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(58, 58)
 	var style := StyleBoxFlat.new()
@@ -186,6 +186,29 @@ func _make_skill_slot(hotkey: int, sk: Dictionary) -> PanelContainer:
 	key_lbl.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	key_lbl.offset_left = 3; key_lbl.offset_top = 2
 	stack.add_child(key_lbl)
+
+	# Skill level badge (bottom-right)
+	if sk_id != "":
+		var sk_lvl := G.player_data.get("skill_lvls", {}).get(sk_id, 1)
+		var lv_lbl := Label.new()
+		lv_lbl.name = "LvLabel"
+		lv_lbl.text = "Lv%d" % sk_lvl
+		lv_lbl.add_theme_font_size_override("font_size", 8)
+		lv_lbl.add_theme_color_override("font_color", Color(0.6, 0.9, 0.5))
+		lv_lbl.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		lv_lbl.anchor_left = 1.0; lv_lbl.anchor_top = 1.0
+		lv_lbl.offset_left = -26; lv_lbl.offset_top  = -14
+		lv_lbl.offset_right = -2; lv_lbl.offset_bottom = -2
+		stack.add_child(lv_lbl)
+
+	# Tooltip with skill details
+	var mp_cost := sk.get("mp", 0)
+	var cd_t    := sk.get("cd", 0.0)
+	var sk_name := sk.get("name", "")
+	if sk_name != "":
+		var kind_str := {"melee": "Corpo a corpo", "aoe": "Area", "proj": "Proiettile",
+			"dash": "Scatto", "buff": "Potenziamento", "heal": "Cura"}.get(sk.get("kind",""), sk.get("kind",""))
+		panel.tooltip_text = "%s\n%s\nPM: %d   CD: %.1fs" % [sk_name, kind_str, mp_cost, cd_t]
 
 	# CD overlay
 	var cd_overlay := ColorRect.new()

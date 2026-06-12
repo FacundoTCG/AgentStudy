@@ -361,6 +361,15 @@ func use_item_at(inv_slot: int) -> void:
 			remove_item_at(inv_slot, 1)
 			recalc_stats()
 			notification.emit("%s consumato!" % def["name"], "info")
+		"fish":
+			var hp_r: int = def.get("hp_restore", 0)
+			if hp_r > 0:
+				player_data["hp"] = mini(player_data["hp"] + hp_r, player_data["max_hp"])
+				combat_message.emit("+%d PV" % hp_r, "heal")
+			else:
+				notification.emit("Il Pesce Abissale ti osserva in silenzio...", "info")
+			remove_item_at(inv_slot, 1)
+			player_stats_changed.emit()
 
 
 func tick_buffs(delta: float) -> void:

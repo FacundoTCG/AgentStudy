@@ -315,6 +315,23 @@ func _build_items() -> void:
 			var t: int = clampi(it["tier"], 1, 8)
 			DROP_POOLS[t].append(id)
 
+	# Canna da pesca
+	ITEMS["canna_da_pesca"] = {"id": "canna_da_pesca", "name": "Canna da Pesca",
+		"kind": "fishing_rod", "quality": "uncommon", "price": 200, "stack": 1,
+		"desc": "Usata per pescare. Premi G vicino all'acqua."}
+
+	# Pesci (6 tipi)
+	for f in [
+		["pesce_carpa",    "Carpa",                 50,  15, "common"],
+		["pesce_trota",    "Trota Maculata",         80,  25, "common"],
+		["pesce_branzino", "Branzino d'Argento",    120,  45, "uncommon"],
+		["pesce_anguilla", "Anguilla Oscura",         60,  20, "common"],
+		["pesce_salmone",  "Salmone Imperiale",      200,  80, "rare"],
+		["pesce_mostro",   "Pesce Abissale",           0, 350, "epic"],
+	]:
+		ITEMS[f[0]] = {"id": f[0], "name": f[1], "kind": "fish",
+			"hp_restore": f[2], "quality": f[4], "price": f[3], "stack": 20}
+
 
 # ───────────────────────────── ZONE (8) ─────────────────────────────
 
@@ -497,6 +514,7 @@ func _build_shops() -> void:
 		weapon_items.append("arm_head_%02d" % i)
 		weapon_items.append("arm_shield_%02d" % i)
 		weapon_items.append("arm_boots_%02d" % i)
+	weapon_items.append("canna_da_pesca")
 	SHOPS["weapon_shop"] = {"name": "Armi e Armature", "items": weapon_items}
 	SHOPS["potion_shop"] = {"name": "Pozioni", "items": ["pozione_rossa_s", "pozione_rossa_m", "pozione_rossa_l",
 		"pozione_blu_s", "pozione_blu_m", "pozione_blu_l"]}
