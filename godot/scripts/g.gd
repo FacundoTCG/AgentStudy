@@ -33,9 +33,32 @@ var kill_streak    : int   = 0
 var streak_timer   : float = 0.0
 const STREAK_RESET := 6.0   # seconds without a kill to reset streak
 
+# ─── Achievements ─────────────────────────────────────────────
+var achievements   : Dictionary = {}   # id → true (completed)
+
+const ACHIEVEMENT_DEFS := [
+	# id, name, description, condition_type, condition_value, reward_xp, reward_gold, reward_sp
+	["ach_lv5",    "Primo Passo",          "Raggiungi il livello 5",    "level",   5,   500,   200, 0],
+	["ach_lv10",   "Avventuriero",         "Raggiungi il livello 10",   "level",  10,  1200,   500, 1],
+	["ach_lv20",   "Veterano",             "Raggiungi il livello 20",   "level",  20,  4000,  2000, 1],
+	["ach_lv30",   "Eroe",                 "Raggiungi il livello 30",   "level",  30, 10000,  5000, 2],
+	["ach_lv50",   "Leggenda",             "Raggiungi il livello 50",   "level",  50, 40000, 20000, 3],
+	["ach_k10",    "Cacciatore",           "Uccidi 10 nemici",          "kills",  10,   300,   100, 0],
+	["ach_k100",   "Sterminatore",         "Uccidi 100 nemici",         "kills", 100,  2000,   800, 1],
+	["ach_k500",   "Macchina da Guerra",   "Uccidi 500 nemici",         "kills", 500, 10000,  4000, 1],
+	["ach_gold10k","Commerciante",         "Accumula 10.000 oro",       "gold", 10000, 1000,     0, 0],
+	["ach_boss1",  "Cacciatore di Capi",   "Uccidi il Gran Khan",       "kill_id","boss_khan", 2000, 1000, 1],
+	["ach_boss2",  "Cacciatore di Draghi", "Uccidi il Drago del Tramonto","kill_id","boss_dragon",15000,8000, 2],
+	["ach_fish1",  "Pescatore Dilettante", "Pesca 1 pesce",             "fish",    1,   200,   100, 0],
+	["ach_fish10", "Pescatore Esperto",    "Pesca 10 pesci",            "fish",   10,  1500,   500, 0],
+	["ach_streak", "Streak!",              "Ottieni una kill streak ×10","streak", 10,  500,   300, 0],
+]
+
 # Set by startup screen before loading main scene
 var pending_class := "guerriero"
 var pending_name  := "Avventuriero"
+
+var fish_caught   : int = 0   # total fish caught (for achievements)
 
 const INV_SIZE := 45
 
@@ -311,6 +334,7 @@ func gain_xp(amount: int, from_kill: bool = false) -> void:
 		level_up.emit(player_data["level"])
 		notification.emit("LIVELLO %d!" % player_data["level"], "levelup")
 	player_stats_changed.emit()
+	check_achievements()
 
 
 func gain_gold(amount: int) -> void:
@@ -419,6 +443,7 @@ func accept_quest(quest_id: String) -> void:
 
 func on_kill(mob_id: String) -> void:
 	kill_counts[mob_id] = kill_counts.get(mob_id, 0) + 1
+	player_data["kills"] = player_data.get("kills", 0) + 1
 	# Kill streak
 	kill_streak += 1
 	streak_timer = STREAK_RESET
@@ -431,6 +456,7 @@ func on_kill(mob_id: String) -> void:
 		if q["goals"].has("kill") and q["goals"]["kill"].has(mob_id):
 			qa["progress"][mob_id] = mini(qa["progress"].get(mob_id, 0) + 1, q["goals"]["kill"][mob_id])
 			quest_updated.emit(qid)
+	check_achievements()
 
 
 func on_collect(item_id: String, qty: int = 1) -> void:
@@ -452,6 +478,44 @@ func is_quest_complete(quest_id: String) -> bool:
 			if qa["progress"].get(key, 0) < q["goals"][goal_type][key]:
 				return false
 	return true
+
+
+func check_achievements() -> void:
+	for def in ACHIEVEMENT_DEFS:
+		var ach_id: String = def[0]
+		if achievements.has(ach_id):
+			continue   # already claimed
+		var ctype: String = def[4] if def[3] == "kill_id" else def[3]
+		var cval = def[4]
+		var met := false
+		match def[3]:
+			"level":
+				met = player_data.get("level", 1) >= cval
+			"kills":
+				var total_kills := 0
+				for k in kill_counts.values():
+					total_kills += k
+				met = total_kills >= cval
+			"gold":
+				met = player_data.get("gold", 0) >= cval
+			"kill_id":
+				met = kill_counts.get(cval, 0) >= 1
+			"fish":
+				met = fish_caught >= cval
+			"streak":
+				met = kill_streak >= cval
+		if met:
+			achievements[ach_id] = true
+			var reward_xp  : int = def[5]
+			var reward_gold: int = def[6]
+			var reward_sp  : int = def[7]
+			gain_xp(reward_xp)
+			gain_gold(reward_gold)
+			if reward_sp > 0:
+				player_data["skill_pts"] = player_data.get("skill_pts", 0) + reward_sp
+			notification.emit("🏆 Obiettivo: %s! +%d XP +%d 💰%s" % [
+				def[1], reward_xp, reward_gold,
+				("  +%d punto abilità" % reward_sp) if reward_sp > 0 else ""], "levelup")
 
 
 func turn_in_quest(quest_id: String) -> void:
@@ -479,6 +543,8 @@ func get_save_data() -> Dictionary:
 		"done_quests": done_quests.duplicate(),
 		"kill_counts": kill_counts.duplicate(),
 		"hair": hair_item,
+		"achievements": achievements.duplicate(),
+		"fish_caught": fish_caught,
 	}
 
 
@@ -490,4 +556,6 @@ func load_save_data(data: Dictionary) -> void:
 	done_quests   = data.get("done_quests", [])
 	kill_counts   = data.get("kill_counts", {})
 	hair_item     = data.get("hair", "")
+	achievements  = data.get("achievements", {})
+	fish_caught   = data.get("fish_caught", 0)
 	recalc_stats()

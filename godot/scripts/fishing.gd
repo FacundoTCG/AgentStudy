@@ -111,8 +111,10 @@ func _do_catch() -> void:
 			break
 	if G.add_item(caught_id):
 		var fname := Data.ITEMS.get(caught_id, {}).get("name", "?")
+		G.fish_caught += 1
 		G.notification.emit("Hai pescato: %s!" % fname, "success")
 		G.combat_message.emit("🐟 %s" % fname, "loot")
+		G.check_achievements()
 	else:
 		G.notification.emit("Inventario pieno! Il pesce è scappato.", "error")
 

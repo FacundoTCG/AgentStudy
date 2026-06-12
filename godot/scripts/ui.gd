@@ -37,6 +37,7 @@ func _input(event: InputEvent) -> void:
 		KEY_C: _toggle_panel("character")
 		KEY_J: _toggle_panel("quests")
 		KEY_M: _toggle_panel("map")
+		KEY_H: _toggle_panel("achievements")
 
 
 # ══════════════════ PANEL FRAMEWORK ═══════════════════════════
@@ -142,6 +143,7 @@ func _build_all_panels() -> void:
 	_build_alchemy_panel()
 	_build_dialogue()
 	_build_shop_panel()
+	_build_achievements_panel()
 	_build_esc_menu()
 
 
@@ -1119,11 +1121,64 @@ func _close_panel() -> void:
 
 func _refresh_open_panel(_qid: String = "") -> void:
 	match current_panel:
-		"inventory": _refresh_inventory()
-		"character": _refresh_character()
-		"quests":    _refresh_quests()
-		"forge":     _refresh_forge()
-		"alchemy":   _refresh_alchemy()
+		"inventory":    _refresh_inventory()
+		"character":    _refresh_character()
+		"quests":       _refresh_quests()
+		"forge":        _refresh_forge()
+		"alchemy":      _refresh_alchemy()
+		"achievements": _refresh_achievements()
+
+
+func _build_achievements_panel() -> void:
+	var pc := _make_panel("Obiettivi  [H]", 460, 520)
+	panels["achievements"] = pc
+
+
+func _refresh_achievements() -> void:
+	var pc := panels.get("achievements")
+	if pc == null or not pc.visible:
+		return
+	var scroll := pc.get_node_or_null("VBox/Scroll")
+	if scroll == null:
+		return
+	for c in scroll.get_children():
+		c.queue_free()
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 5)
+	scroll.add_child(inner)
+
+	var total  := G.ACHIEVEMENT_DEFS.size()
+	var done   := G.achievements.size()
+	inner.add_child(_wood_label("Completati: %d / %d" % [done, total], 13, GOLD_COL))
+	inner.add_child(_separator())
+
+	for def in G.ACHIEVEMENT_DEFS:
+		var ach_id : String = def[0]
+		var completed : bool = G.achievements.has(ach_id)
+		var row := PanelContainer.new()
+		var rsf := StyleBoxFlat.new()
+		rsf.bg_color = Color(0.04, 0.10, 0.03) if completed else Color(0.08, 0.05, 0.02)
+		rsf.border_color = Color(0.2, 0.65, 0.2) if completed else BORDER_COL
+		rsf.set_border_width_all(1)
+		rsf.set_corner_radius_all(3)
+		row.add_theme_stylebox_override("panel", rsf)
+
+		var hb := HBoxContainer.new()
+		var icon_lbl := _wood_label("🏆" if completed else "○", 18, Color(1.0, 0.85, 0.2) if completed else DIM_COL)
+		icon_lbl.custom_minimum_size = Vector2(28, 0)
+		hb.add_child(icon_lbl)
+		var vb := VBoxContainer.new()
+		vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var name_color := GOLD_COL if completed else TEXT_COL
+		vb.add_child(_wood_label(def[1], 13, name_color))
+		vb.add_child(_wood_label(def[2], 10, DIM_COL))
+		hb.add_child(vb)
+		var rwd_txt := "+%d XP  +%d 💰" % [def[5], def[6]]
+		if def[7] > 0:
+			rwd_txt += "  +%d PA" % def[7]
+		vb.add_child(_wood_label(rwd_txt, 9, Color(0.55, 0.85, 0.55) if completed else DIM_COL))
+		row.add_child(hb)
+		inner.add_child(row)
 
 
 func _on_npc_interact(npc_id: String) -> void:
