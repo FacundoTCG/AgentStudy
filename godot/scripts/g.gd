@@ -10,6 +10,7 @@ signal combat_message(text: String, kind: String)
 signal level_up(new_level: int)
 signal mob_killed(mob_id: String, mob_name: String, xp: int, gold: int)
 signal item_dropped(item_id: String, pos: Vector3)
+signal item_picked_up(item_id: String, qty: int)
 signal notification(text: String, kind: String)
 signal party_changed
 signal guild_changed

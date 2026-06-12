@@ -10,7 +10,9 @@ const LOSE_RANGE    := 28.0
 const ATK_RANGE     := 2.4
 const PATROL_RADIUS := 12.0
 
-enum State { IDLE, PATROL, CHASE, ATTACK, DEAD }
+enum State { IDLE, PATROL, CHASE, ATTACK, FLEE, DEAD }
+
+const MonsterScene := preload("res://scenes/monster.tscn")
 
 @export var mob_id   : String = ""
 
@@ -28,6 +30,7 @@ var def        := 5
 var speed      := 4.5
 var aggressive := false
 var is_boss    := false
+var champion   := false
 
 var state        := State.IDLE
 var spawn_pos    : Vector3
@@ -36,9 +39,12 @@ var player_ref   : Node3D = null
 var atk_cd       := 0.0
 var idle_t       := 0.0
 var loot_given   := false
+var _minions_spawned := false
+var _zone_id     := 1
 
 # Status effects
-var statuses : Dictionary = {}   # id → remains_sec
+var statuses : Dictionary = {}        # id → remains_sec
+var _status_auras : Dictionary = {}   # id → MeshInstance3D
 
 
 func setup(data: Dictionary) -> void:
@@ -52,6 +58,8 @@ func setup(data: Dictionary) -> void:
 	speed    = data.get("speed", 4.5)
 	aggressive = data.get("aggressive", false)
 	is_boss  = data.get("boss", false)
+	champion = data.get("champion", false)
+	_zone_id = data.get("zone", 1)
 	scale    = Vector3.ONE * data.get("scale", 1.0)
 	spawn_pos = global_position
 	patrol_target = spawn_pos
@@ -160,6 +168,12 @@ func _physics_process(delta: float) -> void:
 	_tick_statuses(delta)
 	atk_cd = maxf(0.0, atk_cd - delta)
 
+	# Stun completely halts AI
+	if statuses.has("stun"):
+		_apply_gravity(delta)
+		move_and_slide()
+		return
+
 	# Idle bob — subtle breathing when not moving
 	if state == State.IDLE:
 		var mesh_r := get_node_or_null("MeshRoot")
@@ -184,6 +198,10 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_state(delta: float, dist: float) -> void:
+	# Flee trigger: non-boss at < 20% HP while engaged
+	if not is_boss and state in [State.CHASE, State.ATTACK] and float(hp) / float(max_hp) < 0.20:
+		state = State.FLEE
+
 	match state:
 		State.IDLE:
 			idle_t += delta
@@ -218,6 +236,14 @@ func _update_state(delta: float, dist: float) -> void:
 			elif atk_cd <= 0.0:
 				_perform_attack()
 
+		State.FLEE:
+			# Return to fight only if HP recovers above 30% (e.g. after statuses clear)
+			if float(hp) / float(max_hp) >= 0.30 and not is_boss:
+				state = State.CHASE
+			elif not player_ref or dist > LOSE_RANGE * 0.9:
+				state = State.IDLE
+				_return_to_spawn()
+
 
 func _move(delta: float) -> void:
 	var wish := Vector3.ZERO
@@ -245,6 +271,13 @@ func _move(delta: float) -> void:
 				dir.y = 0
 				if dir.length() > 0.1:
 					look_at(global_position + dir, Vector3.UP)
+		State.FLEE:
+			if player_ref:
+				# Run directly away from player at 1.5× speed
+				var away := global_position - player_ref.global_position
+				away.y = 0
+				if away.length() > 0.1:
+					wish = away.normalized() * speed * 1.5
 
 	velocity.x = lerp(velocity.x, wish.x, 12.0 * delta)
 	velocity.z = lerp(velocity.z, wish.z, 12.0 * delta)
@@ -292,8 +325,15 @@ func take_damage(amount: int, source: Node3D = null) -> void:
 	G.combat_message.emit("-%d" % actual, "damage")
 	if not aggressive and state == State.IDLE:
 		state = State.CHASE
+		_call_for_help(source)
 	if source and player_ref == null:
 		player_ref = source
+		if aggressive:
+			_call_for_help(source)
+	# Boss spawns minions at 50% HP once
+	if is_boss and not _minions_spawned and float(hp) / float(max_hp) <= 0.5:
+		_minions_spawned = true
+		_spawn_boss_minions()
 	if hp <= 0:
 		_die(source)
 
@@ -333,6 +373,7 @@ func _show_damage_number(amount: int, is_crit: bool = false) -> void:
 func apply_status(status_id: String, duration: float) -> void:
 	statuses[status_id] = duration
 	_show_status_icon(status_id)
+	_create_status_aura(status_id)
 
 
 func _show_status_icon(status_id: String) -> void:
@@ -369,6 +410,7 @@ func _tick_statuses(delta: float) -> void:
 		statuses.erase(sid)
 		if sid == "slow":
 			speed = Data.MONSTERS.get(mob_id, {}).get("speed", 4.5)
+		_remove_status_aura(sid)
 
 
 func _die(killer: Node3D = null) -> void:
@@ -533,6 +575,89 @@ func _spawn_drop_orb(item_id: String) -> void:
 		var tw4 := get_tree().create_tween()
 		tw4.tween_interval(7.8)
 		tw4.tween_callback(light.queue_free)
+
+
+func _call_for_help(attacker: Node3D) -> void:
+	if attacker == null:
+		return
+	var allies := get_tree().get_nodes_in_group("monsters")
+	for ally in allies:
+		if ally == self or not is_instance_valid(ally):
+			continue
+		if ally.state != State.IDLE and ally.state != State.PATROL:
+			continue
+		if global_position.distance_to(ally.global_position) > NOTICE_RANGE * 1.4:
+			continue
+		# Only same zone monsters respond
+		if ally.get("_zone_id") != _zone_id:
+			continue
+		ally.player_ref = attacker
+		ally.state = State.CHASE
+
+
+func _spawn_boss_minions() -> void:
+	var base_mob_id := "mob_z%d_%d" % [_zone_id, randi() % 4]
+	if not Data.MONSTERS.has(base_mob_id):
+		return
+	var count := 2 + randi() % 2   # 2 or 3
+	for _i in count:
+		var angle := randf() * TAU
+		var dist  := randf_range(2.0, 4.5)
+		var offset := Vector3(cos(angle) * dist, 0.5, sin(angle) * dist)
+		var node := MonsterScene.instantiate()
+		get_parent().add_child(node)
+		node.global_position = global_position + offset
+		var minion_def := Data.MONSTERS[base_mob_id].duplicate(true)
+		minion_def["lvl"] = maxi(1, level - 2)
+		minion_def["hp"]  = int(minion_def.get("hp", 80) * 0.75)
+		minion_def["aggressive"] = true
+		node.setup(minion_def)
+		node.player_ref = player_ref
+		node.state = State.CHASE
+	G.combat_message.emit("Il boss evoca rinforzi!", "warning")
+
+
+func _create_status_aura(status_id: String) -> void:
+	if _status_auras.has(status_id):
+		return
+	var aura_cols := {
+		"poison": Color(0.15, 0.85, 0.15, 0.22),
+		"slow":   Color(0.30, 0.55, 1.00, 0.22),
+		"stun":   Color(1.00, 0.90, 0.15, 0.22),
+		"root":   Color(0.25, 0.75, 0.25, 0.22),
+		"weaken": Color(0.70, 0.40, 1.00, 0.22),
+	}
+	var emit_cols := {
+		"poison": Color(0.1, 0.9, 0.1),
+		"slow":   Color(0.3, 0.5, 1.0),
+		"stun":   Color(1.0, 0.9, 0.2),
+		"root":   Color(0.2, 0.8, 0.2),
+		"weaken": Color(0.7, 0.3, 1.0),
+	}
+	var col: Color = aura_cols.get(status_id, Color(0.8, 0.8, 0.8, 0.2))
+	var ecol: Color = emit_cols.get(status_id, Color(0.8, 0.8, 0.8))
+	var sm := SphereMesh.new()
+	sm.radius = 0.9 * scale.x; sm.height = 1.8 * scale.y
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = col
+	mat.emission_enabled = true
+	mat.emission = ecol * 0.4
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var mi := MeshInstance3D.new()
+	mi.mesh = sm; mi.material_override = mat
+	mi.position = Vector3(0, 0.9 * scale.y, 0)
+	mi.name = "StatusAura_" + status_id
+	add_child(mi)
+	_status_auras[status_id] = mi
+
+
+func _remove_status_aura(status_id: String) -> void:
+	if _status_auras.has(status_id):
+		var aura = _status_auras[status_id]
+		if is_instance_valid(aura):
+			aura.queue_free()
+		_status_auras.erase(status_id)
 
 
 func _despawn() -> void:

@@ -64,6 +64,7 @@ func _ready() -> void:
 	G.recalc_stats()
 	_update_name_label()
 	G.player_stats_changed.connect(_on_stats_changed)
+	G.level_up.connect(_on_level_up)
 	# Sync HP/MP from data
 	G.player_data["hp"]    = G.player_data["max_hp"]
 	G.player_data["mp"]    = G.player_data["max_mp"]
@@ -654,6 +655,90 @@ func _on_stats_changed() -> void:
 	_update_name_label()
 	_update_weapon_visual()
 	_update_mount_visual()
+
+
+func _on_level_up(new_level: int) -> void:
+	_spawn_levelup_pillar()
+
+
+func _spawn_levelup_pillar() -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var base_pos := global_position
+
+	# Golden rising column
+	var pillar_mesh := CylinderMesh.new()
+	pillar_mesh.top_radius = 0.35; pillar_mesh.bottom_radius = 0.55; pillar_mesh.height = 14.0
+	var pillar_mat := StandardMaterial3D.new()
+	pillar_mat.albedo_color = Color(1.0, 0.92, 0.25, 0.55)
+	pillar_mat.emission_enabled = true
+	pillar_mat.emission = Color(1.0, 0.85, 0.1) * 1.6
+	pillar_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	pillar_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var pillar := MeshInstance3D.new()
+	pillar.mesh = pillar_mesh
+	pillar.material_override = pillar_mat
+	pillar.position = base_pos + Vector3(0, 7.0, 0)
+	parent.add_child(pillar)
+
+	# Inner bright core
+	var core_mesh := CylinderMesh.new()
+	core_mesh.top_radius = 0.12; core_mesh.bottom_radius = 0.2; core_mesh.height = 14.0
+	var core_mat := StandardMaterial3D.new()
+	core_mat.albedo_color = Color(1.0, 1.0, 0.9, 0.9)
+	core_mat.emission_enabled = true
+	core_mat.emission = Color(1.0, 0.98, 0.7) * 2.8
+	core_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	core_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var core := MeshInstance3D.new()
+	core.mesh = core_mesh
+	core.material_override = core_mat
+	core.position = base_pos + Vector3(0, 7.0, 0)
+	parent.add_child(core)
+
+	# Burst particles
+	var sparks := CPUParticles3D.new()
+	sparks.emitting = true; sparks.one_shot = true
+	sparks.amount = 60; sparks.lifetime = 1.8; sparks.explosiveness = 0.9
+	sparks.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	sparks.emission_sphere_radius = 0.6
+	sparks.initial_velocity_min = 4.0; sparks.initial_velocity_max = 10.0
+	sparks.gravity = Vector3(0, 1, 0)
+	sparks.scale_amount_min = 0.06; sparks.scale_amount_max = 0.18
+	sparks.color = Color(1.0, 0.9, 0.25)
+	sparks.position = base_pos + Vector3(0, 1.0, 0)
+	parent.add_child(sparks)
+
+	# Ground ring glow
+	var ring_m := TorusMesh.new()
+	ring_m.inner_radius = 0.7; ring_m.outer_radius = 1.2
+	var ring_mat := StandardMaterial3D.new()
+	ring_mat.albedo_color = Color(1.0, 0.9, 0.2, 0.7)
+	ring_mat.emission_enabled = true
+	ring_mat.emission = Color(1.0, 0.85, 0.1) * 1.2
+	ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ring_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var ring := MeshInstance3D.new()
+	ring.mesh = ring_m; ring.material_override = ring_mat
+	ring.position = base_pos + Vector3(0, 0.06, 0)
+	parent.add_child(ring)
+
+	# Animate: pillar rises then fades, ring expands and fades
+	var tw := get_tree().create_tween()
+	tw.tween_property(pillar, "modulate:a", 0.0, 2.2)
+	tw.tween_callback(pillar.queue_free)
+
+	var tw2 := get_tree().create_tween()
+	tw2.tween_property(core, "modulate:a", 0.0, 2.0)
+	tw2.tween_callback(core.queue_free)
+
+	var tw3 := get_tree().create_tween()
+	tw3.tween_property(ring, "scale", Vector3(3.5, 3.5, 3.5), 1.6)
+	tw3.parallel().tween_property(ring, "modulate:a", 0.0, 1.6)
+	tw3.tween_callback(ring.queue_free)
+
+	get_tree().create_timer(2.5).timeout.connect(sparks.queue_free)
 
 
 func _update_weapon_visual() -> void:

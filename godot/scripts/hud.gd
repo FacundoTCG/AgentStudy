@@ -51,6 +51,9 @@ var _sprint_label         : Label     = null
 var _party_frame_root     : Control   = null
 var _boss_bar_panel       : Control   = null
 var _pvp_label            : Label     = null
+var _loot_log_root        : Control   = null
+var _loot_log_entries     : Array     = []
+const LOOT_LOG_MAX        := 6
 
 func _ready() -> void:
 	add_to_group("hud_node")
@@ -79,9 +82,11 @@ func _ready() -> void:
 	_build_party_frames()
 	_build_boss_bar()
 	_build_pvp_indicator()
+	_build_loot_log()
 	G.quest_updated.connect(func(_qid): _update_quest_tracker())
 	G.player_stats_changed.connect(func(): _update_quest_tracker())
 	G.party_changed.connect(func(): _rebuild_party_ui())
+	G.item_picked_up.connect(_on_item_picked_up)
 	# Boss kill announcements in chat
 	G.mob_killed.connect(func(mid, mname, xp, gold):
 		var def := Data.MONSTERS.get(mid, {})
@@ -1005,3 +1010,67 @@ func _build_pvp_indicator() -> void:
 	G.player_stats_changed.connect(func():
 		if _pvp_label:
 			_pvp_label.visible = G.pvp_mode)
+
+
+# ── Loot log (right side) ─────────────────────────────────────
+
+func _build_loot_log() -> void:
+	_loot_log_root = VBoxContainer.new()
+	_loot_log_root.name = "LootLog"
+	_loot_log_root.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_loot_log_root.anchor_left   = 1.0; _loot_log_root.anchor_right  = 1.0
+	_loot_log_root.anchor_top    = 0.0; _loot_log_root.anchor_bottom = 0.0
+	_loot_log_root.offset_left   = -280; _loot_log_root.offset_right  = -8
+	_loot_log_root.offset_top    = 72;   _loot_log_root.offset_bottom = 300
+	_loot_log_root.add_theme_constant_override("separation", 3)
+	_loot_log_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_loot_log_root)
+
+
+func _on_item_picked_up(item_id: String, qty: int) -> void:
+	var def := Data.ITEMS.get(item_id, {})
+	var item_name := def.get("name", "?")
+	var quality   := def.get("quality", "common")
+	var q_colors  := {
+		"common":    Color(0.85, 0.80, 0.72),
+		"uncommon":  Color(0.45, 0.90, 0.45),
+		"rare":      Color(0.35, 0.65, 1.00),
+		"epic":      Color(0.75, 0.35, 1.00),
+		"legendary": Color(1.00, 0.62, 0.10),
+	}
+	var col := q_colors.get(quality, Color(0.85, 0.80, 0.72))
+
+	var row := PanelContainer.new()
+	var row_sf := StyleBoxFlat.new()
+	row_sf.bg_color = Color(0.04, 0.03, 0.02, 0.78)
+	row_sf.border_color = col * 0.6; row_sf.set_border_width_all(1); row_sf.set_corner_radius_all(3)
+	row.add_theme_stylebox_override("panel", row_sf)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var lbl := Label.new()
+	var qty_str := (" x%d" % qty) if qty > 1 else ""
+	lbl.text = "+ %s%s" % [item_name, qty_str]
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", col)
+	lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	lbl.add_theme_constant_override("shadow_offset_x", 1)
+	lbl.add_theme_constant_override("shadow_offset_y", 1)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(lbl)
+	_loot_log_root.add_child(row)
+	_loot_log_entries.append(row)
+
+	# Remove oldest entry if over max
+	while _loot_log_entries.size() > LOOT_LOG_MAX:
+		var old := _loot_log_entries.pop_front()
+		if is_instance_valid(old):
+			old.queue_free()
+
+	# Fade out after 4 seconds
+	var tw := create_tween()
+	tw.tween_interval(3.2)
+	tw.tween_property(row, "modulate:a", 0.0, 0.8)
+	tw.tween_callback(func():
+		if is_instance_valid(row):
+			_loot_log_entries.erase(row)
+			row.queue_free())

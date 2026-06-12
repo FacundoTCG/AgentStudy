@@ -88,6 +88,7 @@ func _on_body_entered(body: Node3D) -> void:
 		var def := Data.ITEMS.get(item_id, {})
 		var quality := def.get("quality", "common")
 		G.notification.emit("Raccolto: %s" % def.get("name", "?"), "success")
+		G.item_picked_up.emit(item_id, item_qty)
 		G.on_collect(item_id, item_qty)
 		# Legendary drop world announcement
 		if quality == "legendary":
