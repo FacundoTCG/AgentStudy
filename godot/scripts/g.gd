@@ -56,12 +56,13 @@ func init_player(class_key: String, player_name: String) -> void:
 		"base_def" : s["def"], "def"    : s["def"],
 		"base_spd" : s["speed"],"speed" : s["speed"],
 		"crit"     : s["crit"],
-		"gold"     : 100,
-		"potions"  : 5,
-		"kills"    : 0,
-		"deaths"   : 0,
-		"skill_pts": 0,
-		"skill_lvls": {},
+		"gold"        : 100,
+		"potions"     : 5,
+		"kills"       : 0,
+		"deaths"      : 0,
+		"skill_pts"   : 0,
+		"skill_lvls"  : {},
+		"regen_bonus" : 0,
 	}
 	equipped = {}
 	inventory = []
@@ -244,13 +245,15 @@ func recalc_stats() -> void:
 				"hp": hp_flat += gdef.get("val", 0)
 				"crit": bonus_crit += gdef.get("val", 0)
 
+	var regen_bonus_val := 0
 	# Buffs
 	for b in buffs:
 		match b["stat"]:
-			"atk_pct":  atk_pct  += b["val"] / 100.0
-			"matk_pct": matk_pct += b["val"] / 100.0
-			"def_pct":  def_pct  += b["val"] / 100.0
-			"speed_pct": spd_pct += b["val"] / 100.0
+			"atk_pct":   atk_pct        += b["val"] / 100.0
+			"matk_pct":  matk_pct       += b["val"] / 100.0
+			"def_pct":   def_pct        += b["val"] / 100.0
+			"speed_pct": spd_pct        += b["val"] / 100.0
+			"regen":     regen_bonus_val += int(b["val"])
 
 	# Mount speed
 	if mount_active and equipped.has("mount"):
@@ -265,8 +268,9 @@ func recalc_stats() -> void:
 	player_data["atk"]    = int((base_atk  + atk_flat)  * atk_pct)
 	player_data["matk"]   = int((base_matk + matk_flat) * matk_pct)
 	player_data["def"]    = int((base_def  + def_flat)  * def_pct)
-	player_data["speed"]  = base_spd * spd_pct
-	player_data["crit"]   = bonus_crit
+	player_data["speed"]        = base_spd * spd_pct
+	player_data["crit"]         = bonus_crit
+	player_data["regen_bonus"]  = regen_bonus_val
 
 	# Clamp HP/MP if max decreased
 	if player_data["max_hp"] < old_max_hp:
@@ -321,6 +325,7 @@ func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float = 1.0, 
 
 func use_potion() -> void:
 	if player_data.get("potions", 0) <= 0:
+		notification.emit("Nessuna pozione!", "error")
 		return
 	var heal := int(player_data["max_hp"] * 0.30)
 	player_data["hp"] = mini(player_data["hp"] + heal, player_data["max_hp"])

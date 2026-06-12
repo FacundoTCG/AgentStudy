@@ -31,7 +31,9 @@ func _ready() -> void:
 	_build_terrain()
 	_build_village()
 	_spawn_npcs()
+	_spawn_trees()
 	_spawn_zone_monsters()
+	_spawn_world_bosses()
 	_spawn_stones()
 	_bake_nav()
 
@@ -182,6 +184,87 @@ func _spawn_zone_monsters() -> void:
 			add_child(node)
 			node.global_position = Vector3(wx, wy + 0.5, wz)
 			node.setup(Data.MONSTERS[mob_id])
+
+
+func _spawn_trees() -> void:
+	# Scatter simple trees (cylinder trunk + sphere crown) around zones
+	var tree_trunk_mat := StandardMaterial3D.new()
+	tree_trunk_mat.albedo_color = Color(0.28, 0.18, 0.10)
+	tree_trunk_mat.roughness = 0.9
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12345
+	for zone in Data.ZONES:
+		var center : Vector2 = zone["center"]
+		var radius : float   = zone["radius"]
+		var tree_count := int(PI * radius * radius * 0.003)
+		tree_count = clampi(tree_count, 8, 30)
+		for _i in tree_count:
+			var angle := rng.randf() * TAU
+			var dist  := sqrt(rng.randf()) * radius
+			var wx    := center.x + cos(angle) * dist
+			var wz    := center.y + sin(angle) * dist
+			if Vector2(wx, wz).length() < 120.0:
+				continue  # No trees in village
+			var wy := _get_height(wx, wz)
+			if wy < 0.4:
+				continue
+
+			var trunk_h := rng.randf_range(1.8, 3.5)
+			var crown_r := rng.randf_range(0.9, 1.6)
+
+			# Trunk
+			var trunk_mesh := CylinderMesh.new()
+			trunk_mesh.top_radius = 0.12; trunk_mesh.bottom_radius = 0.18
+			trunk_mesh.height = trunk_h
+			var trunk_mi := MeshInstance3D.new()
+			trunk_mi.mesh = trunk_mesh
+			trunk_mi.material_override = tree_trunk_mat
+			trunk_mi.position = Vector3(wx, wy + trunk_h * 0.5, wz)
+			add_child(trunk_mi)
+
+			# Crown (zone-colored sphere)
+			var zone_col: Color = zone.get("color", Color(0.2, 0.4, 0.2))
+			var crown_mat := StandardMaterial3D.new()
+			crown_mat.albedo_color = zone_col.lerp(Color(0.1, 0.5, 0.15), 0.5)
+			crown_mat.roughness = 0.9
+			var crown_mesh := SphereMesh.new()
+			crown_mesh.radius = crown_r; crown_mesh.height = crown_r * 1.4
+			var crown_mi := MeshInstance3D.new()
+			crown_mi.mesh = crown_mesh
+			crown_mi.material_override = crown_mat
+			crown_mi.position = Vector3(wx, wy + trunk_h + crown_r * 0.6, wz)
+			add_child(crown_mi)
+
+
+func _spawn_world_bosses() -> void:
+	if not monster_scene:
+		return
+	var boss_ids := ["boss_khan", "boss_warlord", "boss_lich", "boss_hydra", "boss_pharaoh", "boss_dragon"]
+	for bid in boss_ids:
+		if not Data.MONSTERS.has(bid):
+			continue
+		var bdata: Dictionary = Data.MONSTERS[bid]
+		var zone_tier: int = bdata.get("zone", 1)
+		# Find matching zone
+		var target_zone: Dictionary = {}
+		for z in Data.ZONES:
+			if z["tier"] == zone_tier:
+				target_zone = z
+				break
+		if target_zone.is_empty():
+			continue
+		var c: Vector2 = target_zone["center"]
+		var r: float   = target_zone["radius"]
+		var angle := randf() * TAU
+		var wx := c.x + cos(angle) * r * 0.6
+		var wz := c.y + sin(angle) * r * 0.6
+		var wy := _get_height(wx, wz)
+		if wy < 0.3:
+			continue
+		var node := monster_scene.instantiate()
+		add_child(node)
+		node.global_position = Vector3(wx, wy + 1.0, wz)
+		node.setup(bdata)
 
 
 func _spawn_stones() -> void:

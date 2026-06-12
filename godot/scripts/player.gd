@@ -373,10 +373,26 @@ func take_damage(amount: int) -> void:
 	var pd := G.player_data
 	var actual := maxi(1, amount - int(pd["def"] * 0.4))
 	pd["hp"] = maxi(0, pd["hp"] - actual)
+	_show_damage_number(actual)
 	G.combat_message.emit("-%d" % actual, "damage_received")
 	G.player_stats_changed.emit()
 	if pd["hp"] <= 0:
 		_die()
+
+
+func _show_damage_number(amount: int) -> void:
+	var lbl := Label3D.new()
+	lbl.text = "-%d" % amount
+	lbl.font_size = 24
+	lbl.modulate = Color(1.0, 0.2, 0.2)
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.no_depth_test = true
+	lbl.position = global_position + Vector3(randf_range(-0.3, 0.3), 2.4, 0)
+	get_parent().add_child(lbl)
+	var tw := get_tree().create_tween()
+	tw.tween_property(lbl, "position:y", lbl.position.y + 1.5, 1.0)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 1.0)
+	tw.tween_callback(lbl.queue_free)
 
 
 func _die() -> void:

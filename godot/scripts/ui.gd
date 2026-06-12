@@ -692,6 +692,19 @@ func _build_dialogue_options(ndata: Dictionary) -> void:
 		var btn := _wood_button("▶ Alchimia")
 		btn.pressed.connect(func(): _show_panel("alchemy"); _close_dialogue())
 		opts.add_child(btn)
+	if services.has("rest"):
+		var btn := _wood_button("▶ Riposa alla Taverna")
+		btn.pressed.connect(func():
+			G.player_data["hp"] = G.player_data["max_hp"]
+			G.player_data["mp"] = G.player_data["max_mp"]
+			G.player_stats_changed.emit()
+			G.notification.emit("Riposato e curato completamente!", "success")
+			_close_dialogue())
+		opts.add_child(btn)
+	if services.has("skills"):
+		var btn := _wood_button("▶ Addestramento Abilità")
+		btn.pressed.connect(func(): _show_panel("character"); _close_dialogue())
+		opts.add_child(btn)
 	if services.has("heal"):
 		var btn := _wood_button("▶ Cura (100 💰)")
 		btn.pressed.connect(func():

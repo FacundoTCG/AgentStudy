@@ -213,6 +213,8 @@ func take_damage(amount: int, source: Node3D = null) -> void:
 		return
 	var actual := maxi(1, amount - int(def * 0.3))
 	hp -= actual
+	_flash_hit()
+	_show_damage_number(actual)
 	G.combat_message.emit("-%d" % actual, "damage")
 	if not aggressive and state == State.IDLE:
 		state = State.CHASE
@@ -220,6 +222,38 @@ func take_damage(amount: int, source: Node3D = null) -> void:
 		player_ref = source
 	if hp <= 0:
 		_die(source)
+
+
+func _flash_hit() -> void:
+	var body_node := get_node_or_null("MeshRoot/Body")
+	if body_node == null:
+		return
+	var orig_mat: Material = body_node.material_override
+	var flash_mat := StandardMaterial3D.new()
+	flash_mat.albedo_color = Color(1.0, 0.3, 0.3)
+	flash_mat.emission_enabled = true
+	flash_mat.emission = Color(1.0, 0.2, 0.2) * 0.5
+	body_node.material_override = flash_mat
+	var t := get_tree().create_timer(0.12)
+	t.timeout.connect(func():
+		if is_instance_valid(body_node):
+			body_node.material_override = orig_mat)
+
+
+func _show_damage_number(amount: int, is_crit: bool = false) -> void:
+	var lbl := Label3D.new()
+	lbl.text = "-%d" % amount
+	lbl.font_size = 32 if is_crit else 22
+	lbl.modulate = Color(1.0, 0.85, 0.2) if is_crit else Color(1.0, 0.35, 0.35)
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.no_depth_test = true
+	var offset := Vector3(randf_range(-0.4, 0.4), 1.6 + scale.y * 0.5, randf_range(-0.2, 0.2))
+	lbl.position = global_position + offset
+	get_parent().add_child(lbl)
+	var tw := get_tree().create_tween()
+	tw.tween_property(lbl, "position:y", lbl.position.y + 2.0, 1.4)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 1.4)
+	tw.tween_callback(lbl.queue_free)
 
 
 func apply_status(status_id: String, duration: float) -> void:
@@ -269,7 +303,12 @@ func _die(killer: Node3D = null) -> void:
 		# Drop loot
 		_drop_loot(mob_def.get("drops", []))
 
-	# Dissolve after delay
+	# Fade-out then despawn
+	var mesh_root := get_node_or_null("MeshRoot")
+	if mesh_root:
+		var tw := get_tree().create_tween()
+		tw.tween_interval(1.5)
+		tw.tween_property(mesh_root, "modulate:a", 0.0, 1.0)
 	var t := get_tree().create_timer(3.0)
 	t.timeout.connect(_despawn)
 
