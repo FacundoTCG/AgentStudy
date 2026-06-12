@@ -44,6 +44,9 @@ var mount_visual   : Node3D = null
 var active_statuses : Dictionary = {}   # sid → remaining_time
 var auto_heal_on    := true             # auto-drink HP potion when below threshold
 var auto_pot_cd     := 0.0             # cooldown between auto-pots
+var is_sprinting    := false
+const SPRINT_MULT     := 1.65
+const SPRINT_MP_DRAIN := 8.0           # MP/s while sprinting
 
 
 func _ready() -> void:
@@ -132,6 +135,21 @@ func _physics_process(delta: float) -> void:
 
 	var pd := G.player_data
 	var spd: float = pd.get("speed", 9.0)
+
+	# ── Sprint ─────────────────────────────────────────────────
+	var shift_held := Input.is_key_pressed(KEY_SHIFT)
+	var was_sprinting := is_sprinting
+	if shift_held and pd.get("mp", 0) > 0 and not active_statuses.has("stun") and not active_statuses.has("root"):
+		is_sprinting = true
+		var mp_cost := int(SPRINT_MP_DRAIN * delta)
+		if mp_cost > 0:
+			pd["mp"] = maxi(0, pd["mp"] - mp_cost)
+			G.player_stats_changed.emit()
+		spd *= SPRINT_MULT
+	else:
+		is_sprinting = false
+	if was_sprinting != is_sprinting:
+		G.player_stats_changed.emit()
 
 	# ── Movement ───────────────────────────────────────────────
 	var input_dir := Vector2.ZERO

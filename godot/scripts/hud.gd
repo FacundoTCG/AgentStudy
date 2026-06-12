@@ -46,6 +46,8 @@ const CLASS_ICONS := {
 
 var _damage_flash_overlay : ColorRect = null
 var _status_tint_overlay  : ColorRect = null
+var _quest_tracker        : Control   = null
+var _sprint_label         : Label     = null
 
 func _ready() -> void:
 	add_to_group("hud_node")
@@ -67,9 +69,12 @@ func _ready() -> void:
 	minimap_dots.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	minimap_dots.draw.connect(func(): _draw_minimap_dots())
 	minimap_container.add_child(minimap_dots)
-	# Chat input and clock
+	# Chat input, clock, and quest tracker
 	_build_chat_input()
 	_build_time_label()
+	_build_quest_tracker()
+	G.quest_updated.connect(func(_qid): _update_quest_tracker())
+	G.player_stats_changed.connect(func(): _update_quest_tracker())
 	# Boss kill announcements in chat
 	G.mob_killed.connect(func(mid, mname, xp, gold):
 		var def := Data.MONSTERS.get(mid, {})
@@ -85,6 +90,7 @@ func _process(delta: float) -> void:
 	_update_zone()
 	_update_time_label()
 	_update_status_tint()
+	_update_sprint_indicator()
 	# Hide chat input if player pressed Escape
 	if chat_input and chat_input.has_focus() and Input.is_action_just_pressed("ui_cancel"):
 		chat_input.visible = false
@@ -546,6 +552,23 @@ func _build_screen_overlays() -> void:
 	_status_tint_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_status_tint_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_status_tint_overlay)
+	# Sprint indicator
+	_sprint_label = Label.new()
+	_sprint_label.text = "⚡ SPRINT"
+	_sprint_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_sprint_label.anchor_left = 1.0; _sprint_label.anchor_right = 1.0
+	_sprint_label.anchor_top  = 1.0; _sprint_label.anchor_bottom = 1.0
+	_sprint_label.offset_left = -130; _sprint_label.offset_right = -6
+	_sprint_label.offset_top  = -138; _sprint_label.offset_bottom = -114
+	_sprint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_sprint_label.add_theme_font_size_override("font_size", 13)
+	_sprint_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.3))
+	_sprint_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.75))
+	_sprint_label.add_theme_constant_override("shadow_offset_x", 1)
+	_sprint_label.add_theme_constant_override("shadow_offset_y", 1)
+	_sprint_label.visible = false
+	_sprint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_sprint_label)
 
 
 func _flash_damage() -> void:
@@ -574,6 +597,15 @@ func _update_status_tint() -> void:
 			_status_tint_overlay.color.a = 0.0
 	else:
 		_status_tint_overlay.color.a = 0.0
+
+
+func _update_sprint_indicator() -> void:
+	if _sprint_label == null:
+		return
+	if player_node == null:
+		player_node = _find_player()
+	var sprinting: bool = player_node.get("is_sprinting") == true if player_node != null else false
+	_sprint_label.visible = sprinting
 
 
 func _find_player() -> Node3D:
@@ -653,3 +685,82 @@ func _update_time_label() -> void:
 		var m := int((world.day_time - floor(world.day_time)) * 60)
 		var period := "☀" if h >= 6 and h < 18 else "🌙"
 		time_label.text = "%s %02d:%02d" % [period, h, m]
+
+
+# ── Quest Tracker ──────────────────────────────────────────────
+
+func _build_quest_tracker() -> void:
+	var panel := PanelContainer.new()
+	panel.name = "QuestTracker"
+	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	panel.anchor_left = 1.0; panel.anchor_right = 1.0
+	panel.offset_left  = -218; panel.offset_right = -6
+	panel.offset_top   = 222;  panel.offset_bottom = 420
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sf := StyleBoxFlat.new()
+	sf.bg_color = Color(0.06, 0.04, 0.01, 0.78)
+	sf.border_color = Color(0.38, 0.23, 0.07, 0.85)
+	sf.set_border_width_all(1)
+	sf.set_corner_radius_all(4)
+	sf.content_margin_left = 6; sf.content_margin_right = 6
+	sf.content_margin_top = 4; sf.content_margin_bottom = 4
+	panel.add_theme_stylebox_override("panel", sf)
+	var inner := VBoxContainer.new()
+	inner.name = "Inner"
+	inner.add_theme_constant_override("separation", 3)
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(inner)
+	_quest_tracker = panel
+	add_child(panel)
+	_update_quest_tracker()
+
+
+func _update_quest_tracker() -> void:
+	if _quest_tracker == null:
+		return
+	var inner := _quest_tracker.get_node_or_null("Inner")
+	if inner == null:
+		return
+	for c in inner.get_children():
+		c.queue_free()
+	# Header
+	var header := _wood_label("  MISSIONI ATTIVE  [J]", 10, Color(0.85, 0.65, 0.25))
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(header)
+	var sep := HSeparator.new()
+	sep.add_theme_color_override("color", Color(0.38, 0.23, 0.07))
+	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(sep)
+	if G.active_quests.is_empty():
+		var lbl := _wood_label("  Nessuna missione.", 10, Color(0.55, 0.48, 0.35))
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		inner.add_child(lbl)
+		return
+	var shown := 0
+	for qid in G.active_quests.keys():
+		if shown >= 3:
+			break
+		var q := Data.QUESTS.get(qid, {})
+		var qa := G.active_quests[qid]
+		var complete := G.is_quest_complete(qid)
+		var title_col := Color(0.55, 0.95, 0.55) if complete else Color(0.92, 0.84, 0.70)
+		var title_lbl := _wood_label(("✔ " if complete else "▸ ") + q.get("name", qid), 11, title_col)
+		title_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		inner.add_child(title_lbl)
+		for goal_type in q.get("goals", {}).keys():
+			for key in q["goals"][goal_type].keys():
+				var cur  := qa["progress"].get(key, 0)
+				var need := q["goals"][goal_type][key]
+				var prog_col := Color(0.45, 0.90, 0.45) if cur >= need else Color(0.68, 0.60, 0.45)
+				var lbl2 := _wood_label("    %d/%d  %s" % [cur, need, _short_name(goal_type, key)], 10, prog_col)
+				lbl2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				inner.add_child(lbl2)
+		shown += 1
+
+
+func _short_name(goal_type: String, key: String) -> String:
+	if goal_type == "kill":
+		return Data.MONSTERS.get(key, {}).get("name", key)
+	if goal_type == "collect":
+		return Data.ITEMS.get(key, {}).get("name", key)
+	return key
