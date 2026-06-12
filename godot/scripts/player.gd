@@ -319,6 +319,7 @@ func _show_aoe_ring(pos: Vector3, radius: float) -> void:
 func _cast_projectile(sk: Dictionary, mult: float, uses_matk: bool) -> void:
 	if not is_instance_valid(target_mob):
 		return
+	_spawn_projectile_visual(target_mob)
 	var chain_left: int = sk.get("chain", 1)
 	var pd := G.player_data
 	var current := target_mob
@@ -416,6 +417,45 @@ func take_damage(amount: int) -> void:
 		_die()
 
 
+func _spawn_projectile_visual(target: Node3D) -> void:
+	if not is_instance_valid(target):
+		return
+	var proj := MeshInstance3D.new()
+	var sm := SphereMesh.new(); sm.radius = 0.16; sm.height = 0.32
+	proj.mesh = sm
+	var cls_cols := {"guerriero": Color(0.85, 0.65, 0.2), "ninja": Color(0.3, 0.9, 0.45),
+		"mago": Color(0.55, 0.3, 0.95), "sciamano": Color(0.3, 0.75, 0.95)}
+	var col := cls_cols.get(G.player_data.get("class", "guerriero"), Color(1.0, 0.8, 0.3))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = col
+	mat.emission_enabled = true
+	mat.emission = col * 1.4
+	proj.material_override = mat
+	var start_pos := global_position + Vector3(0, 1.2, 0)
+	proj.position = start_pos
+	get_parent().add_child(proj)
+	var dest := target.global_position + Vector3(0, 1.0, 0)
+	var tw := get_tree().create_tween()
+	tw.tween_property(proj, "position", dest, 0.22)
+	tw.tween_property(proj, "scale", Vector3(0.05, 0.05, 0.05), 0.08)
+	tw.tween_callback(proj.queue_free)
+
+
+func _show_heal_number(amount: int) -> void:
+	var lbl := Label3D.new()
+	lbl.text = "+%d" % amount
+	lbl.font_size = 17
+	lbl.modulate = Color(0.3, 0.95, 0.45)
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.no_depth_test = true
+	lbl.position = global_position + Vector3(randf_range(-0.4, 0.4), 2.2, 0)
+	get_parent().add_child(lbl)
+	var tw := get_tree().create_tween()
+	tw.tween_property(lbl, "position:y", lbl.position.y + 1.0, 1.1)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 1.1)
+	tw.tween_callback(lbl.queue_free)
+
+
 func _show_damage_number(amount: int) -> void:
 	var lbl := Label3D.new()
 	lbl.text = "-%d" % amount
@@ -467,8 +507,11 @@ func _tick_regen(delta: float) -> void:
 		var regen := maxi(1, int(pd["max_hp"] * 0.01))
 		if pd.get("regen_bonus", 0) > 0:
 			regen += pd["regen_bonus"]
-		pd["hp"] = mini(pd["hp"] + regen, pd["max_hp"])
-		G.player_stats_changed.emit()
+		if pd["hp"] < pd["max_hp"]:
+			pd["hp"] = mini(pd["hp"] + regen, pd["max_hp"])
+			G.player_stats_changed.emit()
+			if get_parent() != null:
+				_show_heal_number(regen)
 	if mp_regen_t >= 3.0:
 		mp_regen_t = 0.0
 		var regen := maxi(1, int(pd["max_mp"] * 0.015))

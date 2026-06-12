@@ -56,9 +56,67 @@ func setup(data: Dictionary) -> void:
 	state = State.IDLE
 	if name_label:
 		name_label.text = "%s  Lv %d" % [mob_name, level]
-		name_label.modulate = Color(1.0, 0.55, 0.4) if is_boss else Color(1, 1, 1)
+		_update_name_label_color()
 	_apply_zone_color(data)
+	_vary_body_shape(data)
+	if is_boss:
+		_add_boss_aura()
 	add_to_group("monsters")
+
+
+func _update_name_label_color() -> void:
+	if name_label == null:
+		return
+	if is_boss:
+		name_label.modulate = Color(1.0, 0.5, 0.12)
+		return
+	var pl_lvl := G.player_data.get("level", 1)
+	var diff := level - pl_lvl
+	if diff >= 10:
+		name_label.modulate = Color(1.0, 0.1, 0.1)
+	elif diff >= 5:
+		name_label.modulate = Color(1.0, 0.55, 0.28)
+	elif diff <= -5:
+		name_label.modulate = Color(0.5, 0.5, 0.5)
+	else:
+		name_label.modulate = Color(0.96, 0.85, 0.7)
+
+
+func _vary_body_shape(data: Dictionary) -> void:
+	var body_node := get_node_or_null("MeshRoot/Body")
+	var head_node := get_node_or_null("MeshRoot/Head")
+	if body_node == null:
+		return
+	var id_str: String = data.get("id", "mob_z1_0")
+	var role := int(id_str.substr(id_str.rfind("_") + 1)) % 4
+	match role:
+		1:  # Stout / orcish
+			body_node.scale = Vector3(1.35, 0.88, 1.35)
+			if head_node: head_node.scale = Vector3(1.2, 1.05, 1.2)
+		2:  # Skeletal / tall
+			body_node.scale = Vector3(0.75, 1.48, 0.75)
+			if head_node:
+				head_node.scale = Vector3(0.9, 0.9, 0.9)
+				head_node.position.y += 0.25
+		3:  # Beast-like — elongated low body
+			body_node.scale = Vector3(1.18, 0.72, 1.65)
+			if head_node: head_node.scale = Vector3(1.05, 0.85, 1.25)
+
+
+func _add_boss_aura() -> void:
+	var aura_m := SphereMesh.new(); aura_m.radius = 1.15; aura_m.height = 2.3
+	var aura_mi := MeshInstance3D.new()
+	aura_mi.mesh = aura_m
+	var aura_mat := StandardMaterial3D.new()
+	aura_mat.albedo_color = Color(0.85, 0.12, 0.12, 0.12)
+	aura_mat.emission_enabled = true
+	aura_mat.emission = Color(1.0, 0.2, 0.1) * 0.35
+	aura_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	aura_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	aura_mi.material_override = aura_mat
+	aura_mi.position = Vector3(0, 0.75, 0)
+	aura_mi.name = "BossAura"
+	add_child(aura_mi)
 
 
 func _apply_zone_color(data: Dictionary) -> void:
@@ -265,6 +323,25 @@ func _show_damage_number(amount: int, is_crit: bool = false) -> void:
 
 func apply_status(status_id: String, duration: float) -> void:
 	statuses[status_id] = duration
+	_show_status_icon(status_id)
+
+
+func _show_status_icon(status_id: String) -> void:
+	var icons := {"poison": "☠", "slow": "❄", "stun": "⭐", "root": "🌿", "weaken": "💀"}
+	var cols  := {"poison": Color(0.25, 0.9, 0.25), "slow": Color(0.4, 0.65, 1.0),
+		"stun": Color(1.0, 0.9, 0.2), "root": Color(0.35, 0.85, 0.35), "weaken": Color(0.75, 0.5, 1.0)}
+	var lbl := Label3D.new()
+	lbl.text = icons.get(status_id, "?")
+	lbl.font_size = 26
+	lbl.modulate = cols.get(status_id, Color.WHITE)
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.no_depth_test = true
+	lbl.position = global_position + Vector3(randf_range(-0.3, 0.3), 1.9, 0)
+	get_parent().add_child(lbl)
+	var tw := get_tree().create_tween()
+	tw.tween_property(lbl, "position:y", lbl.position.y + 0.6, 0.6)
+	tw.tween_property(lbl, "modulate:a", 0.0, 0.4)
+	tw.tween_callback(lbl.queue_free)
 
 
 func _tick_statuses(delta: float) -> void:
