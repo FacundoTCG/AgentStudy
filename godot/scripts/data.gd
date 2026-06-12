@@ -15,6 +15,7 @@ var SHOPS := {}
 var QUESTS := {}
 var DROP_POOLS := {}
 var STONE_TIERS := []
+var CRAFT_RECIPES := []   # Array of {name, ingredients:[{id,qty}], result_id, result_qty, gold_cost}
 
 const EQUIP_SLOTS := ["weapon", "body", "head", "shield", "boots", "bracelet", "necklace", "earring", "ring"]
 const ENHANCE_RATES := [95, 90, 85, 75, 65, 55, 45, 35, 25]
@@ -54,6 +55,7 @@ func _ready() -> void:
 	_build_npcs()
 	_build_shops()
 	_build_quests()
+	_build_recipes()
 
 
 func level_xp(lvl: int) -> int:
@@ -620,3 +622,53 @@ func _build_quests() -> void:
 	for d in defs:
 		QUESTS[d[0]] = {"id": d[0], "name": d[1], "giver": d[2], "lvl": d[3],
 			"goals": d[4], "rewards": d[5], "desc": d[6]}
+
+
+# ───────────────────────────── RICETTE DI FORGIATURA ─────────────────────────────
+
+func _build_recipes() -> void:
+	CRAFT_RECIPES = []
+	# Zone 1: 5 materiali A → arma tier 3 guerriero
+	for cls in CLASSES.keys():
+		for t in range(1, 6):   # 5 ricette per classe (tier 3-7 armi)
+			var wpn_id := "wpn_%s_%02d" % [cls, t + 2]
+			if not ITEMS.has(wpn_id):
+				continue
+			var mat_a := "mat_z%d_a" % clampi(t, 1, 8)
+			var mat_b := "mat_z%d_b" % clampi(t, 1, 8)
+			CRAFT_RECIPES.append({
+				"name": "Forgia: %s" % ITEMS[wpn_id]["name"],
+				"ingredients": [{"id": mat_a, "qty": 4}, {"id": mat_b, "qty": 2}],
+				"result_id": wpn_id, "result_qty": 1,
+				"gold_cost": 800 * t,
+			})
+	# Armor recipes: body armor tier 3-6 for each class
+	for cls in CLASSES.keys():
+		for t in range(2, 6):
+			var arm_id := "arm_body_%s_%02d" % [cls, t]
+			if not ITEMS.has(arm_id):
+				continue
+			var mat_a := "mat_z%d_a" % clampi(t - 1, 1, 8)
+			CRAFT_RECIPES.append({
+				"name": "Forgia: %s" % ITEMS[arm_id]["name"],
+				"ingredients": [{"id": mat_a, "qty": 5}, {"id": "pietra_raffinazione", "qty": 1}],
+				"result_id": arm_id, "result_qty": 1,
+				"gold_cost": 600 * t,
+			})
+	# Accessory recipes: bracciali e collane tier 3-5
+	for i in range(2, 5):
+		var brac := "jwl_bracelet_%02d" % (i + 1)
+		var neck := "jwl_necklace_%02d" % (i + 1)
+		var mat  := "mat_z%d_b" % clampi(i, 1, 8)
+		if ITEMS.has(brac):
+			CRAFT_RECIPES.append({
+				"name": "Forgia: %s" % ITEMS[brac]["name"],
+				"ingredients": [{"id": mat, "qty": 3}, {"id": "gem_rubino_g1", "qty": 1}],
+				"result_id": brac, "result_qty": 1, "gold_cost": 400 * i,
+			})
+		if ITEMS.has(neck):
+			CRAFT_RECIPES.append({
+				"name": "Forgia: %s" % ITEMS[neck]["name"],
+				"ingredients": [{"id": mat, "qty": 3}, {"id": "gem_ametista_g1", "qty": 1}],
+				"result_id": neck, "result_qty": 1, "gold_cost": 400 * i,
+			})

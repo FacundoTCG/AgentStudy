@@ -748,6 +748,9 @@ func _refresh_forge() -> void:
 			break  # One gem option at a time for simplicity
 		inner.add_child(row)
 
+	# Crafting section at the bottom
+	_refresh_crafting(inner)
+
 
 func _do_enhance(inv_slot: int) -> void:
 	var inst := G.inventory[inv_slot]
@@ -833,6 +836,81 @@ func _do_socket(eq_slot: String, gem_inv_slot: int) -> void:
 	G.recalc_stats()
 	var gdef := Data.ITEMS.get(gem_inst["id"], {})
 	G.notification.emit("%s incastonata!" % gdef.get("name", "?"), "success")
+	G.inventory_changed.emit()
+	_refresh_forge()
+
+
+# ── Crafting (called from _refresh_forge) ──────────────────────
+
+func _refresh_crafting(inner: VBoxContainer) -> void:
+	inner.add_child(_separator())
+	inner.add_child(_section_label("  ▸ FABBRICAZIONE"))
+	inner.add_child(_wood_label("Combina materiali per creare equipaggiamento.", 11, DIM_COL))
+	inner.add_child(_separator())
+	var player_cls := G.player_data.get("class", "guerriero")
+	var shown := 0
+	for recipe in Data.CRAFT_RECIPES:
+		# Filter by class relevance
+		var res_def := Data.ITEMS.get(recipe["result_id"], {})
+		var res_cls := res_def.get("class", "")
+		if res_cls != "" and res_cls != player_cls:
+			continue
+		if shown >= 12:
+			break
+		var can_craft := true
+		var ing_text := ""
+		for ing in recipe["ingredients"]:
+			var have := 0
+			for i in G.INV_SIZE:
+				var inst := G.inventory[i]
+				if inst and inst["id"] == ing["id"]:
+					have += inst.get("qty", 1)
+			var ing_def := Data.ITEMS.get(ing["id"], {})
+			var ok := have >= ing["qty"]
+			if not ok:
+				can_craft = false
+			ing_text += "%s×%d%s  " % [ing_def.get("name", ing["id"])[:12], ing["qty"], "" if ok else "✗"]
+		var row := VBoxContainer.new()
+		var name_row := HBoxContainer.new()
+		var name_lbl := _wood_label(_item_emoji(res_def) + " " + recipe.get("name",""), 12, GOLD_COL if can_craft else DIM_COL)
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_row.add_child(name_lbl)
+		var craft_btn := _wood_button("⚒ 💰%d" % recipe["gold_cost"])
+		craft_btn.disabled = not can_craft
+		craft_btn.pressed.connect(_do_craft.bind(recipe))
+		name_row.add_child(craft_btn)
+		row.add_child(name_row)
+		row.add_child(_wood_label("    " + ing_text.strip_edges(), 10, DIM_COL))
+		inner.add_child(row)
+		shown += 1
+
+
+func _do_craft(recipe: Dictionary) -> void:
+	if not G.spend_gold(recipe["gold_cost"]):
+		return
+	# Remove ingredients
+	for ing in recipe["ingredients"]:
+		var remaining := ing["qty"]
+		for i in G.INV_SIZE:
+			if remaining <= 0:
+				break
+			var inst := G.inventory[i]
+			if inst and inst["id"] == ing["id"]:
+				var take := mini(remaining, inst.get("qty", 1))
+				G.remove_item_at(i, take)
+				remaining -= take
+		if remaining > 0:
+			G.notification.emit("Ingredienti insufficienti!", "error")
+			G.gain_gold(recipe["gold_cost"])
+			return
+	# Add result
+	if G.add_item(recipe["result_id"], recipe.get("result_qty", 1)):
+		var res_def := Data.ITEMS.get(recipe["result_id"], {})
+		G.notification.emit("Fabbricato: %s!" % res_def.get("name", "?"), "success")
+		G.combat_message.emit("⚒ %s" % res_def.get("name", "?"), "loot")
+	else:
+		G.notification.emit("Inventario pieno! Oggetto fabbricato non aggiunto.", "error")
+		G.gain_gold(recipe["gold_cost"])
 	G.inventory_changed.emit()
 	_refresh_forge()
 
