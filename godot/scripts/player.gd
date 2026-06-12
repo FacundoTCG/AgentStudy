@@ -266,6 +266,7 @@ func use_skill(index: int) -> void:
 		return
 	pd["mp"] -= sk["mp"]
 	skill_cds[index] = sk["cd"]
+	_flash_skill_slot(index)
 
 	# Skill level damage bonus (+8% per livello)
 	var sk_lvl: int = pd["skill_lvls"].get(sk["id"], 1)
@@ -681,3 +682,9 @@ func _update_mount_visual() -> void:
 
 func get_stats() -> Dictionary:
 	return G.player_data
+
+
+func _flash_skill_slot(index: int) -> void:
+	var huds := get_tree().get_nodes_in_group("hud_node")
+	if huds.size() > 0 and huds[0].has_method("flash_skill"):
+		huds[0].flash_skill(index)

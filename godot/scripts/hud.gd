@@ -215,6 +215,14 @@ func _make_skill_slot(hotkey: int, sk: Dictionary, sk_id: String = "") -> PanelC
 			"dash": "Scatto", "buff": "Potenziamento", "heal": "Cura"}.get(sk.get("kind",""), sk.get("kind",""))
 		panel.tooltip_text = "%s\n%s\nPM: %d   CD: %.1fs" % [sk_name, kind_str, mp_cost, cd_t]
 
+	# Skill-activation flash overlay (white burst, hidden by default)
+	var flash_ov := ColorRect.new()
+	flash_ov.name = "FlashOverlay"
+	flash_ov.color = Color(1.0, 0.95, 0.6, 0.0)
+	flash_ov.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flash_ov.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(flash_ov)
+
 	# CD overlay
 	var cd_overlay := ColorRect.new()
 	cd_overlay.name = "CDOverlay"
@@ -266,6 +274,26 @@ func _tick_skill_cds(delta: float) -> void:
 			var lbl: Label = overlay.get_node_or_null("CDLabel")
 			if lbl:
 				lbl.text = "%.1f" % cd_val
+
+
+func flash_skill(index: int) -> void:
+	if index < 0 or index >= skill_slots.size():
+		return
+	var slot: PanelContainer = skill_slots[index]
+	var stack := slot.get_child(0) if slot.get_child_count() > 0 else null
+	if stack == null:
+		return
+	var flash_ov: ColorRect = stack.get_node_or_null("FlashOverlay")
+	if flash_ov == null:
+		return
+	# Light-burst alpha flash on the slot
+	var tw := create_tween()
+	tw.tween_property(flash_ov, "color:a", 0.72, 0.04)
+	tw.tween_property(flash_ov, "color:a", 0.0, 0.22)
+	# Scale punch: enlarge slightly then spring back
+	var tw2 := create_tween()
+	tw2.tween_property(slot, "scale", Vector2(1.18, 1.18), 0.06).set_trans(Tween.TRANS_BACK)
+	tw2.tween_property(slot, "scale", Vector2(1.0, 1.0), 0.14).set_trans(Tween.TRANS_ELASTIC)
 
 
 # ── Target frame ──────────────────────────────────────────────
