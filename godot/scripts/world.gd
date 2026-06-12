@@ -42,6 +42,9 @@ var weather_timer   : float = 0.0
 const WEATHER_CHECK := 90.0   # seconds between weather rolls
 var _zone_fog_timer : float = 0.0
 
+var dead_bosses     : Dictionary = {}   # boss_id → seconds until respawn
+const BOSS_RESPAWN_TIME := 300.0        # 5 minutes
+
 
 func _ready() -> void:
 	_load_scenes()
@@ -63,6 +66,9 @@ func _ready() -> void:
 
 	# Weather
 	_build_rain_system()
+
+	# Listen for boss deaths to schedule respawn
+	G.mob_killed.connect(_on_mob_killed)
 
 	# Spawn player
 	if player_scene:
@@ -90,6 +96,7 @@ func _process(delta: float) -> void:
 		_respawn_stones()
 	_update_weather(delta)
 	_update_zone_atmosphere(delta)
+	_tick_boss_respawns(delta)
 
 
 func _respawn_stones() -> void:
@@ -689,6 +696,54 @@ func _build_dungeon_rooms() -> void:
 		exit_node.teleport_dest = entrance_world_pos + Vector3(0, 0.5, 5.0)
 		add_child(exit_node)
 		exit_node.global_position = rc + Vector3(0, 1.5, ROOM_D * 0.5 - 4.0)
+
+
+func _on_mob_killed(mob_id: String, mob_name: String, _xp: int, _gold: int) -> void:
+	var def := Data.MONSTERS.get(mob_id, {})
+	if def.get("boss", false) and not mob_id.begins_with("boss_bandit") and not mob_id.begins_with("boss_orc"):
+		# Schedule world boss respawn
+		dead_bosses[mob_id] = BOSS_RESPAWN_TIME
+		G.notification.emit("%s sarà di ritorno tra 5 minuti..." % mob_name, "info")
+
+
+func _tick_boss_respawns(delta: float) -> void:
+	if dead_bosses.is_empty() or not monster_scene:
+		return
+	var to_spawn := []
+	for bid in dead_bosses.keys():
+		dead_bosses[bid] -= delta
+		if dead_bosses[bid] <= 0.0:
+			to_spawn.append(bid)
+	for bid in to_spawn:
+		dead_bosses.erase(bid)
+		_respawn_boss(bid)
+
+
+func _respawn_boss(bid: String) -> void:
+	if not Data.MONSTERS.has(bid) or not monster_scene:
+		return
+	var bdata: Dictionary = Data.MONSTERS[bid]
+	var zone_tier: int = bdata.get("zone", 1)
+	var target_zone: Dictionary = {}
+	for z in Data.ZONES:
+		if z["tier"] == zone_tier:
+			target_zone = z
+			break
+	if target_zone.is_empty():
+		return
+	var c: Vector2 = target_zone["center"]
+	var r: float   = target_zone["radius"]
+	var angle := randf() * TAU
+	var wx := c.x + cos(angle) * r * 0.6
+	var wz := c.y + sin(angle) * r * 0.6
+	var wy := _get_height(wx, wz)
+	if wy < 0.3:
+		wy = 1.0
+	var node := monster_scene.instantiate()
+	add_child(node)
+	node.global_position = Vector3(wx, wy + 1.0, wz)
+	node.setup(bdata)
+	G.notification.emit("⚠ %s è ricomparso nel mondo!" % bdata["name"], "error")
 
 
 func _build_rain_system() -> void:

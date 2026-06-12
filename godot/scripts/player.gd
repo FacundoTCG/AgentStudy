@@ -42,6 +42,8 @@ var mp_regen_t  := 0.0
 var weapon_holder  : Node3D = null
 var mount_visual   : Node3D = null
 var active_statuses : Dictionary = {}   # sid → remaining_time
+var auto_heal_on    := true             # auto-drink HP potion when below threshold
+var auto_pot_cd     := 0.0             # cooldown between auto-pots
 
 
 func _ready() -> void:
@@ -237,6 +239,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Tab: cycle target
 	if Input.is_action_just_pressed("target_nearest"):
 		_target_nearest()
+	# U: toggle auto-potion
+	if event is InputEventKey and event.pressed and event.keycode == KEY_U:
+		auto_heal_on = not auto_heal_on
+		G.notification.emit("Auto-pozione: %s" % ("ON" if auto_heal_on else "OFF"), "info")
+		get_viewport().set_input_as_handled()
 	# G: fishing
 	if event is InputEventKey and event.pressed and event.keycode == KEY_G:
 		var fish_arr := get_tree().get_nodes_in_group("fishing_system")
@@ -533,6 +540,20 @@ func _tick_regen(delta: float) -> void:
 	var pd := G.player_data
 	hp_regen_t += delta
 	mp_regen_t += delta
+	# Auto-potion
+	auto_pot_cd = maxf(0.0, auto_pot_cd - delta)
+	if auto_heal_on and auto_pot_cd <= 0.0:
+		var hp_pct := float(pd["hp"]) / float(pd["max_hp"])
+		if hp_pct < 0.30:
+			for i in G.INV_SIZE:
+				var inst := G.inventory[i]
+				if inst == null:
+					continue
+				var def := Data.ITEMS.get(inst["id"], {})
+				if def.get("kind") == "potion" and def.get("stat") == "hp":
+					G.use_item_at(i)
+					auto_pot_cd = 3.5
+					break
 	if hp_regen_t >= 4.0:
 		hp_regen_t = 0.0
 		var regen := maxi(1, int(pd["max_hp"] * 0.01))
