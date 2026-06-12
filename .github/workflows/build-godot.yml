@@ -1,0 +1,119 @@
+name: Build Regni d'Oriente
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Windows .exe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot 4.2.2 headless + export templates
+        run: |
+          set -e
+          GODOT_VER="4.2.2-stable"
+          GODOT_BIN="Godot_v${GODOT_VER}_linux.x86_64"
+          wget -q "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VER}/${GODOT_BIN}.zip"
+          unzip -q "${GODOT_BIN}.zip"
+          chmod +x "${GODOT_BIN}"
+          sudo mv "${GODOT_BIN}" /usr/local/bin/godot
+
+          TEMPLATES_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VER}/Godot_v${GODOT_VER}_export_templates.tpz"
+          wget -q -O templates.tpz "${TEMPLATES_URL}"
+          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VER}
+          unzip -q templates.tpz -d /tmp/tpl
+          cp /tmp/tpl/templates/* ~/.local/share/godot/export_templates/${GODOT_VER}/
+
+      - name: Import project (generate .import)
+        run: |
+          cd godot
+          timeout 60 godot --headless --editor --quit || true
+
+      - name: Export Windows PCK + .exe
+        run: |
+          cd godot
+          mkdir -p ../export/windows
+          godot --headless --export-release "Windows Desktop" ../export/windows/RegniDOriente.exe
+
+      - name: Package release
+        run: |
+          cd export/windows
+          zip -r ../../RegniDOriente-Windows.zip .
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RegniDOriente-Windows
+          path: RegniDOriente-Windows.zip
+          retention-days: 30
+
+  build-linux:
+    name: Linux .x86_64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot + templates
+        run: |
+          set -e
+          GODOT_VER="4.2.2-stable"
+          GODOT_BIN="Godot_v${GODOT_VER}_linux.x86_64"
+          wget -q "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VER}/${GODOT_BIN}.zip"
+          unzip -q "${GODOT_BIN}.zip"
+          chmod +x "${GODOT_BIN}"
+          sudo mv "${GODOT_BIN}" /usr/local/bin/godot
+          wget -q -O templates.tpz "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VER}/Godot_v${GODOT_VER}_export_templates.tpz"
+          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VER}
+          unzip -q templates.tpz -d /tmp/tpl
+          cp /tmp/tpl/templates/* ~/.local/share/godot/export_templates/${GODOT_VER}/
+
+      - name: Import + Export Linux
+        run: |
+          cd godot
+          timeout 60 godot --headless --editor --quit || true
+          mkdir -p ../export/linux
+          godot --headless --export-release "Linux/X11" ../export/linux/RegniDOriente.x86_64
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RegniDOriente-Linux
+          path: export/linux/
+          retention-days: 30
+
+  build-mac:
+    name: macOS .app
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot + templates
+        run: |
+          set -e
+          GODOT_VER="4.2.2-stable"
+          wget -q "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VER}/Godot_v${GODOT_VER}_macos.universal.zip"
+          unzip -q "Godot_v${GODOT_VER}_macos.universal.zip"
+          sudo cp -r "Godot.app" /Applications/
+          ln -sf "/Applications/Godot.app/Contents/MacOS/Godot" /usr/local/bin/godot
+          wget -q -O templates.tpz "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VER}/Godot_v${GODOT_VER}_export_templates.tpz"
+          mkdir -p ~/Library/Application\ Support/Godot/export_templates/${GODOT_VER}
+          unzip -q templates.tpz -d /tmp/tpl
+          cp /tmp/tpl/templates/* ~/Library/Application\ Support/Godot/export_templates/${GODOT_VER}/
+
+      - name: Import + Export macOS
+        run: |
+          cd godot
+          timeout 60 godot --headless --editor --quit || true
+          mkdir -p ../export/mac
+          godot --headless --export-release "macOS" ../export/mac/RegniDOriente.zip
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RegniDOriente-macOS
+          path: export/mac/
+          retention-days: 30

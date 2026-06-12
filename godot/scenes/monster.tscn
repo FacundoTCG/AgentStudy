@@ -1,0 +1,54 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/monster.gd" id="1"]
+
+[sub_resource type="CapsuleShape3D" id="col_shape"]
+radius = 0.34
+height = 1.5
+
+[sub_resource type="SphereMesh" id="body_mesh"]
+radius = 0.30
+height = 0.9
+
+[sub_resource type="SphereMesh" id="head_mesh"]
+radius = 0.20
+
+[sub_resource type="QuadMesh" id="hp_bar_bg"]
+size = Vector2(1.2, 0.10)
+
+[node name="Monster" type="CharacterBody3D"]
+script = ExtResource("1")
+collision_layer = 4
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("col_shape")
+position = Vector3(0, 0.75, 0)
+
+[node name="MeshRoot" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="MeshRoot"]
+position = Vector3(0, 0.75, 0)
+mesh = SubResource("body_mesh")
+
+[node name="Head" type="MeshInstance3D" parent="MeshRoot"]
+position = Vector3(0, 1.35, 0)
+mesh = SubResource("head_mesh")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="MeshRoot"]
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+max_speed = 4.5
+path_desired_distance = 0.5
+target_desired_distance = 0.8
+avoidance_enabled = true
+
+[node name="HPBarMesh" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.85, 0)
+mesh = SubResource("hp_bar_bg")
+cast_shadow = 0
+
+[node name="NameLabel" type="Label3D" parent="."]
+position = Vector3(0, 2.05, 0)
+font_size = 12
+modulate = Color(1, 0.8, 0.7, 1)

@@ -1,0 +1,45 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/demon_stone.gd" id="1"]
+
+[sub_resource type="BoxShape3D" id="col_shape"]
+size = Vector3(1.2, 2.0, 1.2)
+
+[sub_resource type="SphereShape3D" id="hit_shape"]
+radius = 1.5
+
+[sub_resource type="BoxMesh" id="stone_mesh"]
+size = Vector3(1.2, 2.0, 1.2)
+
+[sub_resource type="QuadMesh" id="hp_bar_bg"]
+size = Vector2(1.6, 0.12)
+
+[node name="DemonStone" type="StaticBody3D"]
+script = ExtResource("1")
+collision_layer = 4
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("col_shape")
+position = Vector3(0, 1.0, 0)
+
+[node name="StoneMesh" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.0, 0)
+mesh = SubResource("stone_mesh")
+
+[node name="HitArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = true
+
+[node name="HitShape" type="CollisionShape3D" parent="HitArea"]
+shape = SubResource("hit_shape")
+
+[node name="HPBarMesh" type="MeshInstance3D" parent="."]
+position = Vector3(0, 2.3, 0)
+mesh = SubResource("hp_bar_bg")
+cast_shadow = 0
+
+[node name="NameLabel" type="Label3D" parent="."]
+position = Vector3(0, 2.55, 0)
+font_size = 14
+modulate = Color(0.8, 0.5, 1.0, 1)

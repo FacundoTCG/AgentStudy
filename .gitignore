@@ -1,7 +1,11 @@
 node_modules/
 dist/
+export/
 *.db
 *.log
 .DS_Store
 Thumbs.db
 server/node_modules/
+godot/.godot/
+godot/.import/
+*.import
