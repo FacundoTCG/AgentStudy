@@ -500,13 +500,36 @@ func _draw_world_map(ctrl: Control) -> void:
 	var vc := Vector2(1600 * scale_f, 1600 * scale_f)
 	ctrl.draw_circle(vc, 18 * scale_f, Color(0.8, 0.7, 0.4, 0.6))
 	ctrl.draw_string(ThemeDB.fallback_font, vc + Vector2(-20, -4), "Pietrascura", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color.WHITE)
+	# NPC markers (teal circles)
+	for npc_id in Data.NPCS.keys():
+		var ndata := Data.NPCS[npc_id]
+		var nc : Vector2 = ndata["pos"]
+		var nx := (nc.x + 1600) * scale_f
+		var ny := (nc.y + 1600) * scale_f
+		ctrl.draw_circle(Vector2(nx, ny), 4.0, Color(0.3, 0.9, 0.6))
+	# Dungeon portals (purple markers)
+	var portals_pos := [Vector2(400,-800), Vector2(-600,400), Vector2(900,200),
+		Vector2(-300,-900), Vector2(700,700), Vector2(-900,600)]
+	var portal_names := ["Grotta Banditi","Bosco Maledetto","Rovine Metin",
+		"Cripta Orchi","Torre Oscurità","Vulcano"]
+	for i in portals_pos.size():
+		var pp2 := portals_pos[i]
+		var ppx := (pp2.x + 1600) * scale_f
+		var ppz := (pp2.y + 1600) * scale_f
+		ctrl.draw_circle(Vector2(ppx, ppz), 6.0, Color(0.6, 0.3, 0.9, 0.85))
+		ctrl.draw_string(ThemeDB.fallback_font, Vector2(ppx + 5, ppz),
+			portal_names[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.8, 0.6, 1.0))
 	# Player marker
 	var pl_arr := get_tree().get_nodes_in_group("player")
 	if pl_arr.size() > 0:
 		var p: Node3D = pl_arr[0]
 		var px := (p.global_position.x + 1600) * scale_f
 		var pz := (p.global_position.z + 1600) * scale_f
-		ctrl.draw_circle(Vector2(px, pz), 5.0, Color(0.3, 0.8, 1.0))
+		ctrl.draw_circle(Vector2(px, pz), 6.0, Color(0.2, 0.7, 1.0))
+		# Direction indicator
+		var fwd_x := px + sin(p.rotation.y) * 8.0
+		var fwd_z := pz + cos(p.rotation.y) * 8.0
+		ctrl.draw_line(Vector2(px, pz), Vector2(fwd_x, fwd_z), Color(0.2, 0.7, 1.0), 1.5)
 
 
 # ── Forgia ────────────────────────────────────────────────────
@@ -548,6 +571,31 @@ func _refresh_forge() -> void:
 		var enh_btn := _wood_button("%d%%  %s" % [rate, cost_str])
 		enh_btn.pressed.connect(_do_enhance.bind(i))
 		row.add_child(enh_btn)
+		inner.add_child(row)
+
+	# ── Enchantment section (scroll reroll) ─────────────────────────
+	inner.add_child(_separator())
+	inner.add_child(_section_label("  ▸ INCANTAMENTO BONUS"))
+	inner.add_child(_wood_label("Usa Pergamena dell'Incantamento per rilanciare i bonus.", 11, DIM_COL))
+	var has_ench_scroll := G.find_item("pergamena_incantamento") >= 0
+	inner.add_child(_separator())
+	for eq_slot in G.equipped.keys():
+		var inst := G.equipped[eq_slot]
+		var def := Data.ITEMS.get(inst["id"], {})
+		if not def.has("slot"):
+			continue
+		var q := def.get("quality", "common")
+		if q == "common":
+			continue
+		var row := HBoxContainer.new()
+		var bonus_cnt := inst.get("bonuses", []).size()
+		var lbl := _wood_label("[%d bonus]  %s" % [bonus_cnt, def.get("name","?")], 12, TEXT_COL)
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(lbl)
+		var ench_btn := _wood_button("✨ Rilancia")
+		ench_btn.disabled = not has_ench_scroll
+		ench_btn.pressed.connect(_do_enchant.bind(eq_slot))
+		row.add_child(ench_btn)
 		inner.add_child(row)
 
 	# ── Gem socketing section ─────────────────────────────────────
@@ -615,6 +663,23 @@ func _do_enhance(inv_slot: int) -> void:
 				inst["enh"] = maxi(0, enh - 1)
 			G.notification.emit("Potenziamento fallito!", "error")
 	G.recalc_stats()
+	G.inventory_changed.emit()
+	_refresh_forge()
+
+
+func _do_enchant(eq_slot: String) -> void:
+	var si := G.find_item("pergamena_incantamento")
+	if si < 0:
+		G.notification.emit("Serve una Pergamena dell'Incantamento!", "error")
+		return
+	var eq_inst := G.equipped.get(eq_slot)
+	if eq_inst == null:
+		return
+	G.remove_item_at(si, 1)
+	var def := Data.ITEMS.get(eq_inst["id"], {})
+	eq_inst["bonuses"] = G._roll_bonuses(def)
+	G.recalc_stats()
+	G.notification.emit("Bonus riestratti con successo!", "success")
 	G.inventory_changed.emit()
 	_refresh_forge()
 

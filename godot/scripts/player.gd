@@ -39,7 +39,8 @@ var using_nav    := false
 
 var hp_regen_t  := 0.0
 var mp_regen_t  := 0.0
-var weapon_holder : Node3D = null
+var weapon_holder  : Node3D = null
+var mount_visual   : Node3D = null
 
 
 func _ready() -> void:
@@ -538,6 +539,7 @@ func _update_name_label() -> void:
 func _on_stats_changed() -> void:
 	_update_name_label()
 	_update_weapon_visual()
+	_update_mount_visual()
 
 
 func _update_weapon_visual() -> void:
@@ -584,6 +586,46 @@ func _update_weapon_visual() -> void:
 	mi.material_override = mat
 	mi.position = Vector3(0.4, 0.86, 0.0)
 	weapon_holder.add_child(mi)
+
+
+func _update_mount_visual() -> void:
+	if mount_visual:
+		mount_visual.queue_free()
+		mount_visual = null
+	if not G.mount_active:
+		return
+	# Find mount color from inventory or equipped
+	var mount_col := Color(0.45, 0.30, 0.18)
+	for i in G.INV_SIZE:
+		var inst := G.inventory[i]
+		if inst and Data.ITEMS.get(inst["id"], {}).get("kind") == "mount":
+			mount_col = Data.ITEMS[inst["id"]].get("color", mount_col)
+			break
+	mount_visual = Node3D.new()
+	mount_visual.name = "MountVisual"
+	var body_mat := StandardMaterial3D.new()
+	body_mat.albedo_color = mount_col; body_mat.roughness = 0.75
+	# Body
+	var bm := BoxMesh.new(); bm.size = Vector3(0.6, 0.52, 1.1)
+	var bmi := MeshInstance3D.new(); bmi.mesh = bm; bmi.material_override = body_mat
+	bmi.position = Vector3(0, -0.48, 0)
+	mount_visual.add_child(bmi)
+	# Head
+	var hm := SphereMesh.new(); hm.radius = 0.22; hm.height = 0.44
+	var hmi := MeshInstance3D.new(); hmi.mesh = hm; hmi.material_override = body_mat
+	hmi.position = Vector3(0, -0.16, 0.62)
+	mount_visual.add_child(hmi)
+	# Legs
+	var leg_mat := StandardMaterial3D.new()
+	leg_mat.albedo_color = mount_col.darkened(0.28); leg_mat.roughness = 0.8
+	for lx in [-0.22, 0.22]:
+		for lz in [-0.38, 0.34]:
+			var lm := CylinderMesh.new()
+			lm.top_radius = 0.07; lm.bottom_radius = 0.05; lm.height = 0.5
+			var lmi := MeshInstance3D.new(); lmi.mesh = lm; lmi.material_override = leg_mat
+			lmi.position = Vector3(lx, -0.88, lz)
+			mount_visual.add_child(lmi)
+	add_child(mount_visual)
 
 
 func get_stats() -> Dictionary:
