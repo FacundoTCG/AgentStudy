@@ -61,6 +61,7 @@ func _make_panel(title: String, w: float, h: float) -> PanelContainer:
 
 	# Header
 	var header := PanelContainer.new()
+	header.name = "Header"
 	var hstyle := StyleBoxFlat.new()
 	hstyle.bg_color = WOOD_MED
 	hstyle.border_color = BORDER_COL
@@ -68,8 +69,10 @@ func _make_panel(title: String, w: float, h: float) -> PanelContainer:
 	hstyle.set_corner_radius_all(0)
 	header.add_theme_stylebox_override("panel", hstyle)
 	var hrow := HBoxContainer.new()
+	hrow.name = "TitleRow"
 	header.add_child(hrow)
 	var title_lbl := Label.new()
+	title_lbl.name = "Title"
 	title_lbl.text = title.to_upper()
 	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_lbl.add_theme_color_override("font_color", GOLD_COL)
@@ -626,9 +629,11 @@ func _build_dialogue() -> void:
 	pc.visible = false
 	panels["dialogue"] = pc
 	var vbox := VBoxContainer.new()
+	vbox.name = "VBox"
 	vbox.add_theme_constant_override("separation", 8)
 	pc.add_child(vbox)
 	var hrow := HBoxContainer.new()
+	hrow.name = "HRow"
 	var portrait_lbl := Label.new()
 	portrait_lbl.name = "Portrait"
 	portrait_lbl.add_theme_font_size_override("font_size", 44)
@@ -636,6 +641,7 @@ func _build_dialogue() -> void:
 	portrait_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hrow.add_child(portrait_lbl)
 	var content := VBoxContainer.new()
+	content.name = "Content"
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var npc_name_lbl := Label.new()
 	npc_name_lbl.name = "NPCName"
@@ -737,7 +743,6 @@ func _show_shop(npc_id: String) -> void:
 		return
 	var shop := Data.SHOPS.get(shop_id, {})
 	var pc := panels["shop"]
-	pc.get_node("VBox").get_node_or_null("VBox/Scroll")
 	var scroll := pc.get_node_or_null("VBox/Scroll")
 	if scroll == null: return
 	for c in scroll.get_children(): c.queue_free()
@@ -784,7 +789,9 @@ func _show_shop(npc_id: String) -> void:
 		row.add_child(sell_btn)
 		sell_col.add_child(row)
 	inner.add_child(sell_col)
-	pc.get_node("VBox/VBox/Header/HBoxContainer/Label").text = shop.get("name", "Negozio").to_upper()
+	var tl := pc.get_node_or_null("VBox/Header/TitleRow/Title")
+	if tl:
+		tl.text = shop.get("name", "Negozio").to_upper()
 	_show_panel("shop")
 
 

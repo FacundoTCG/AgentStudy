@@ -5,7 +5,7 @@ config_version=5
 
 config/name="Regni d'Oriente"
 config/version="1.0.0"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/startup.tscn"
 config/features=PackedStringArray("4.2", "Forward Plus")
 boot_splash/bg_color=Color(0.05, 0.03, 0.01, 1)
 

@@ -10,10 +10,10 @@ const SAVE_INTERVAL := 60.0
 
 
 func _ready() -> void:
-	# Read class/name from command line args or default
+	# Class/name from startup screen or command-line args
+	var class_key   := G.pending_class
+	var player_name := G.pending_name
 	var args := OS.get_cmdline_args()
-	var class_key  := "guerriero"
-	var player_name := "Avventuriero"
 	for i in args.size():
 		if args[i] == "--class" and i + 1 < args.size():
 			class_key = args[i + 1]
@@ -32,6 +32,9 @@ func _ready() -> void:
 			G.init_player(class_key, player_name)
 	else:
 		G.init_player(class_key, player_name)
+
+	# Refresh player visuals after save load (class color may differ from default)
+	call_deferred("_refresh_player_color")
 
 	# Auto-save loop
 	G.player_stats_changed.connect(_on_stats_changed)
@@ -74,3 +77,19 @@ func _resume() -> void:
 
 func _on_stats_changed() -> void:
 	pass
+
+
+func _refresh_player_color() -> void:
+	var cls_colors := {
+		"guerriero": Color(0.75, 0.22, 0.17), "ninja":    Color(0.18, 0.60, 0.30),
+		"mago":      Color(0.55, 0.25, 0.75), "sciamano": Color(0.20, 0.50, 0.72),
+	}
+	var cls := G.player_data.get("class", "guerriero")
+	var col  : Color = cls_colors.get(cls, Color(0.7, 0.5, 0.3))
+	for p in get_tree().get_nodes_in_group("player"):
+		var body := p.get_node_or_null("MeshRoot/Body")
+		if body:
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = col
+			mat.roughness = 0.7
+			body.material_override = mat

@@ -57,7 +57,32 @@ func setup(data: Dictionary) -> void:
 	if name_label:
 		name_label.text = "%s  Lv %d" % [mob_name, level]
 		name_label.modulate = Color(1.0, 0.55, 0.4) if is_boss else Color(1, 1, 1)
+	_apply_zone_color(data)
 	add_to_group("monsters")
+
+
+func _apply_zone_color(data: Dictionary) -> void:
+	var zone_idx: int = data.get("zone", 1) - 1
+	var zone_cols := [
+		Color(0.55, 0.42, 0.28), Color(0.22, 0.38, 0.22), Color(0.48, 0.40, 0.22),
+		Color(0.58, 0.32, 0.20), Color(0.38, 0.35, 0.45), Color(0.25, 0.36, 0.30),
+		Color(0.60, 0.38, 0.22), Color(0.40, 0.38, 0.48),
+	]
+	var body_col: Color = zone_cols[clampi(zone_idx, 0, 7)]
+	if is_boss:
+		body_col = body_col.lerp(Color(0.8, 0.1, 0.1), 0.4)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = body_col
+	mat.roughness = 0.8
+	var body_node := get_node_or_null("MeshRoot/Body")
+	if body_node:
+		body_node.material_override = mat
+	var head_mat := StandardMaterial3D.new()
+	head_mat.albedo_color = body_col.darkened(0.25)
+	head_mat.roughness = 0.8
+	var head_node := get_node_or_null("MeshRoot/Head")
+	if head_node:
+		head_node.material_override = head_mat
 
 
 func _ready() -> void:
@@ -136,9 +161,14 @@ func _move(delta: float) -> void:
 			if dir.length() > 0.5:
 				wish = dir.normalized() * speed * 0.55
 		State.CHASE:
-			if nav_agent and nav_agent.is_navigation_finished() == false:
+			if nav_agent and not nav_agent.is_navigation_finished():
 				var next := nav_agent.get_next_path_position()
 				var dir := (next - global_position)
+				dir.y = 0
+				if dir.length() > 0.1:
+					wish = dir.normalized() * speed
+			elif player_ref:
+				var dir := (player_ref.global_position - global_position)
 				dir.y = 0
 				if dir.length() > 0.1:
 					wish = dir.normalized() * speed

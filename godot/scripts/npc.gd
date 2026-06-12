@@ -17,6 +17,21 @@ func setup(data: Dictionary) -> void:
 	add_to_group("npcs")
 	if name_label:
 		name_label.text = "%s\n[%s]" % [data["name"], data["title"]]
+	# Give each NPC a warm unique color so they stand out from monsters
+	var body := get_node_or_null("MeshRoot/Body")
+	if body:
+		var idx := Data.NPCS.keys().find(npc_id)
+		var npc_cols := [
+			Color(0.55, 0.35, 0.18), Color(0.30, 0.22, 0.60), Color(0.22, 0.55, 0.35),
+			Color(0.60, 0.48, 0.20), Color(0.45, 0.55, 0.25), Color(0.20, 0.42, 0.55),
+			Color(0.55, 0.28, 0.42), Color(0.48, 0.42, 0.28), Color(0.38, 0.22, 0.55),
+			Color(0.28, 0.48, 0.42), Color(0.55, 0.40, 0.22), Color(0.22, 0.38, 0.52),
+			Color(0.52, 0.48, 0.30),
+		]
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = npc_cols[clampi(idx, 0, npc_cols.size() - 1)]
+		mat.roughness = 0.7
+		body.material_override = mat
 
 
 func _ready() -> void:

@@ -3,17 +3,17 @@ extends CanvasLayer
 ## Stile visivo Metin2: pannelli in legno scuro, bordi oro.
 
 # ── Riferimenti nodi ─────────────────────────────────────────
-@onready var hp_bar    : ProgressBar = $PlayerFrame/Bars/HPRow/HPBar
-@onready var mp_bar    : ProgressBar = $PlayerFrame/Bars/MPRow/MPBar
-@onready var xp_bar    : ProgressBar = $PlayerFrame/XPBar
-@onready var hp_label  : Label = $PlayerFrame/Bars/HPRow/HPLabel
-@onready var mp_label  : Label = $PlayerFrame/Bars/MPRow/MPLabel
-@onready var xp_label  : Label = $PlayerFrame/XPLabel
-@onready var name_label: Label = $PlayerFrame/NameLabel
-@onready var lv_label  : Label = $PlayerFrame/LevelBadge
+@onready var hp_bar    : ProgressBar = $PlayerFrame/VBox/HRow/Bars/HPRow/HPBar
+@onready var mp_bar    : ProgressBar = $PlayerFrame/VBox/HRow/Bars/MPRow/MPBar
+@onready var xp_bar    : ProgressBar = $PlayerFrame/VBox/XPBar
+@onready var hp_label  : Label = $PlayerFrame/VBox/HRow/Bars/HPRow/HPLabel
+@onready var mp_label  : Label = $PlayerFrame/VBox/HRow/Bars/MPRow/MPLabel
+@onready var xp_label  : Label = $PlayerFrame/VBox/XPLabel
+@onready var name_label: Label = $PlayerFrame/VBox/HRow/Bars/NameLabel
+@onready var lv_label  : Label = $PlayerFrame/VBox/LevelBadge
 @onready var gold_label: Label = $GoldLabel
 @onready var zone_label: Label = $ZoneLabel
-@onready var portrait  : Label = $PlayerFrame/Portrait
+@onready var portrait  : Label = $PlayerFrame/VBox/HRow/Portrait
 
 @onready var target_frame  : PanelContainer = $TargetFrame
 @onready var target_name_lb: Label = $TargetFrame/VBox/TargetName

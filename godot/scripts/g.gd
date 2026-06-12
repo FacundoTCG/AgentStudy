@@ -28,6 +28,10 @@ var current_zone   : Dictionary = {}
 var mount_active   := false
 var hair_item      := ""
 
+# Set by startup screen before loading main scene
+var pending_class := "guerriero"
+var pending_name  := "Avventuriero"
+
 const INV_SIZE := 45
 
 

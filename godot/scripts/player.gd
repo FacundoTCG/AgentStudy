@@ -42,7 +42,7 @@ var mp_regen_t  := 0.0
 
 
 func _ready() -> void:
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	cam_arm.spring_length = cam_dist
 	cam_arm.rotation.x = -cam_pitch
 	if G.player_data.is_empty():

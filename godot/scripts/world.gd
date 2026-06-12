@@ -29,6 +29,7 @@ func _ready() -> void:
 	_load_scenes()
 	_gen_noise()
 	_build_terrain()
+	_build_village()
 	_spawn_npcs()
 	_spawn_zone_monsters()
 	_spawn_stones()
@@ -40,6 +41,7 @@ func _ready() -> void:
 		add_child(p)
 		p.global_position = Vector3(0, _get_height(0, 0) + 2.0, 0)
 		p.add_to_group("player")
+		_color_player_by_class(p)
 
 	# Sky / environment
 	_setup_environment()
@@ -205,9 +207,119 @@ func _spawn_stones() -> void:
 			spawned_stones.append(node)
 
 
+func _build_village() -> void:
+	# Procedural village buildings near center (0,0)
+	var building_defs := [
+		# [x, z, w, h, d, Color]  — w=width, h=height, d=depth
+		[32, -58, 8.0, 6.0, 6.0, Color(0.35, 0.22, 0.12)],   # Blacksmith
+		[-48, -48, 12.0, 5.0, 8.0, Color(0.42, 0.28, 0.15)], # Merchant
+		[0, 68, 10.0, 5.5, 7.0, Color(0.38, 0.25, 0.14)],    # Healer
+		[68, 18, 14.0, 6.0, 9.0, Color(0.28, 0.18, 0.10)],   # Tavern
+		[-78, 8, 8.0, 5.0, 6.0, Color(0.34, 0.20, 0.12)],    # Barber
+		[53, 52, 8.0, 5.0, 6.0, Color(0.30, 0.20, 0.14)],    # Alchemist
+		[-38, 78, 9.0, 5.0, 7.0, Color(0.36, 0.22, 0.13)],   # Stable
+		[83, -22, 8.0, 5.0, 6.0, Color(0.32, 0.20, 0.13)],   # Enchanter
+		[-68, -38, 9.0, 5.5, 6.0, Color(0.38, 0.24, 0.14)],  # Master
+		[14, -83, 8.0, 5.0, 6.0, Color(0.30, 0.19, 0.12)],   # Captain
+		[-13, 88, 8.0, 5.0, 6.0, Color(0.34, 0.22, 0.13)],   # Nonna
+		[-88, -13, 9.0, 5.5, 7.0, Color(0.28, 0.18, 0.12)],  # Sage
+		[43, -43, 7.0, 5.0, 5.0, Color(0.33, 0.21, 0.13)],   # Explorer
+		# Extra houses
+		[20, 30, 7.0, 4.5, 5.0, Color(0.32, 0.21, 0.13)],
+		[-25, -20, 6.0, 4.5, 5.0, Color(0.30, 0.20, 0.12)],
+		[15, -25, 7.0, 4.5, 5.0, Color(0.36, 0.23, 0.14)],
+		[-10, 40, 6.0, 4.5, 5.0, Color(0.31, 0.20, 0.12)],
+		[40, 5, 6.0, 4.0, 5.0, Color(0.33, 0.22, 0.13)],
+	]
+	var roof_mat := StandardMaterial3D.new()
+	roof_mat.albedo_color = Color(0.25, 0.15, 0.08)
+	roof_mat.roughness = 0.9
+
+	for bdef in building_defs:
+		var bx: float = bdef[0]; var bz: float = bdef[1]
+		var bw: float = bdef[2]; var bh: float = bdef[3]; var bd: float = bdef[4]
+		var bcol: Color = bdef[5]
+		var by: float = _get_height(bx, bz)
+
+		# Wall mesh
+		var wall_mesh := BoxMesh.new()
+		wall_mesh.size = Vector3(bw, bh, bd)
+		var wall_mat := StandardMaterial3D.new()
+		wall_mat.albedo_color = bcol
+		wall_mat.roughness = 0.85
+		var wall_mi := MeshInstance3D.new()
+		wall_mi.mesh = wall_mesh
+		wall_mi.material_override = wall_mat
+		wall_mi.position = Vector3(bx, by + bh * 0.5, bz)
+		wall_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		add_child(wall_mi)
+
+		# Roof (slightly wider, half-height box as simple flat roof)
+		var roof_mesh := BoxMesh.new()
+		roof_mesh.size = Vector3(bw + 0.4, 0.35, bd + 0.4)
+		var roof_mi := MeshInstance3D.new()
+		roof_mi.mesh = roof_mesh
+		roof_mi.material_override = roof_mat
+		roof_mi.position = Vector3(bx, by + bh + 0.18, bz)
+		add_child(roof_mi)
+
+		# Collision for building walls
+		var st_body := StaticBody3D.new()
+		var cshape := CollisionShape3D.new()
+		var box_s := BoxShape3D.new()
+		box_s.size = Vector3(bw, bh, bd)
+		cshape.shape = box_s
+		st_body.add_child(cshape)
+		st_body.position = Vector3(bx, by + bh * 0.5, bz)
+		add_child(st_body)
+
+	# Central well / landmark
+	var well_mat := StandardMaterial3D.new()
+	well_mat.albedo_color = Color(0.55, 0.48, 0.38)
+	well_mat.roughness = 0.8
+	var well_mesh := CylinderMesh.new()
+	well_mesh.top_radius = 0.9; well_mesh.bottom_radius = 0.9; well_mesh.height = 1.0
+	var well_mi := MeshInstance3D.new()
+	well_mi.mesh = well_mesh; well_mi.material_override = well_mat
+	well_mi.position = Vector3(0, _get_height(0, 0) + 0.5, 0)
+	add_child(well_mi)
+
+
+func _color_player_by_class(p: Node3D) -> void:
+	var cls := G.player_data.get("class", "guerriero")
+	var cls_colors := {
+		"guerriero": Color(0.75, 0.22, 0.17),
+		"ninja":     Color(0.18, 0.60, 0.30),
+		"mago":      Color(0.55, 0.25, 0.75),
+		"sciamano":  Color(0.20, 0.50, 0.72),
+	}
+	var body := p.get_node_or_null("MeshRoot/Body")
+	var head := p.get_node_or_null("MeshRoot/Head")
+	if body:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = cls_colors.get(cls, Color(0.7, 0.5, 0.3))
+		mat.roughness = 0.7
+		body.material_override = mat
+	if head:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.85, 0.72, 0.58)
+		mat.roughness = 0.8
+		head.material_override = mat
+
+
 func _bake_nav() -> void:
-	if nav_region:
-		nav_region.bake_navigation_mesh()
+	if nav_region == null:
+		return
+	var nm := NavigationMesh.new()
+	nm.agent_height = 1.8
+	nm.agent_radius = 0.5
+	nm.agent_max_climb = 0.35
+	nm.agent_max_slope = 45.0
+	nm.cell_size = 0.5
+	nm.cell_height = 0.25
+	nm.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
+	nav_region.navigation_mesh = nm
+	nav_region.bake_navigation_mesh()
 
 
 func _setup_environment() -> void:
