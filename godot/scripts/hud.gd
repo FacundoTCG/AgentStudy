@@ -21,8 +21,8 @@ extends CanvasLayer
 @onready var target_hp_bar : ProgressBar = $TargetFrame/VBox/TargetHP
 
 @onready var skill_bar   : HBoxContainer = $SkillBar
-@onready var minimap_vp  : SubViewport   = $MinimapContainer/MinimapViewport
-@onready var minimap_cam : Camera2D      = $MinimapContainer/MinimapViewport/MinimapCam
+@onready var minimap_vp  : SubViewport = $MinimapContainer/MinimapViewport
+@onready var minimap_cam : Camera3D    = $MinimapContainer/MinimapViewport/MinimapCam
 
 @onready var combat_log  : VBoxContainer = $CombatLog
 @onready var notif_box   : VBoxContainer = $Notifications
@@ -47,6 +47,9 @@ func _ready() -> void:
 	target_frame.visible = false
 	_build_skill_bar()
 	_update_hud()
+	# Share the main 3D world with the minimap SubViewport
+	if minimap_vp:
+		minimap_vp.world_3d = get_viewport().world_3d
 
 
 func _process(delta: float) -> void:
@@ -238,7 +241,7 @@ func _update_minimap() -> void:
 	if minimap_cam == null or player_node == null:
 		return
 	var p := player_node.global_position
-	minimap_cam.position = Vector2(p.x, p.z)
+	minimap_cam.global_position = Vector3(p.x, p.y + 150.0, p.z)
 
 
 # ── Zone label ────────────────────────────────────────────────

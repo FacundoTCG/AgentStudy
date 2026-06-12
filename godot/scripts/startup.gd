@@ -21,10 +21,48 @@ var class_buttons  := {}
 
 func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	_apply_card_style()
 	_check_existing_save()
 	_build_class_buttons()
 	start_btn.pressed.connect(_on_start)
 	_select_class("guerriero")
+
+
+func _apply_card_style() -> void:
+	var card := get_node_or_null("Root/Center/Card")
+	if card:
+		var sf := StyleBoxFlat.new()
+		sf.bg_color = WOOD_DARK
+		sf.border_color = BORDER_COL
+		sf.set_border_width_all(2)
+		sf.set_corner_radius_all(8)
+		sf.content_margin_left = 24; sf.content_margin_right = 24
+		sf.content_margin_top  = 18; sf.content_margin_bottom = 18
+		card.add_theme_stylebox_override("panel", sf)
+
+	# Style the name input
+	var input_sf := StyleBoxFlat.new()
+	input_sf.bg_color = Color(0.06, 0.04, 0.02)
+	input_sf.border_color = BORDER_COL
+	input_sf.set_border_width_all(1)
+	input_sf.content_margin_left = 8; input_sf.content_margin_right = 8
+	input_sf.content_margin_top = 4;  input_sf.content_margin_bottom = 4
+	name_edit.add_theme_stylebox_override("normal", input_sf)
+	name_edit.add_theme_stylebox_override("focus", input_sf)
+
+	# Style start button
+	var btn_sf := StyleBoxFlat.new()
+	btn_sf.bg_color = Color(0.18, 0.10, 0.04)
+	btn_sf.border_color = GOLD_COL
+	btn_sf.set_border_width_all(2)
+	btn_sf.set_corner_radius_all(5)
+	start_btn.add_theme_stylebox_override("normal", btn_sf)
+	var btn_sfh := btn_sf.duplicate()
+	btn_sfh.bg_color = Color(0.28, 0.16, 0.06)
+	start_btn.add_theme_stylebox_override("hover", btn_sfh)
+	var btn_sfp := btn_sf.duplicate()
+	btn_sfp.bg_color = Color(0.14, 0.08, 0.03)
+	start_btn.add_theme_stylebox_override("pressed", btn_sfp)
 
 
 func _check_existing_save() -> void:
