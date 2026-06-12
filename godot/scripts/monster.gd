@@ -100,6 +100,13 @@ func _physics_process(delta: float) -> void:
 	_tick_statuses(delta)
 	atk_cd = maxf(0.0, atk_cd - delta)
 
+	# Idle bob — subtle breathing when not moving
+	if state == State.IDLE:
+		var mesh_r := get_node_or_null("MeshRoot")
+		if mesh_r:
+			var tb := Time.get_ticks_msec() * 0.001
+			mesh_r.position.y = sin(tb * 1.2 + spawn_pos.x * 0.5) * 0.025
+
 	# Find player
 	if player_ref == null or not is_instance_valid(player_ref):
 		player_ref = _find_player()
@@ -214,7 +221,7 @@ func take_damage(amount: int, source: Node3D = null) -> void:
 	var actual := maxi(1, amount - int(def * 0.3))
 	hp -= actual
 	_flash_hit()
-	_show_damage_number(actual)
+	_show_damage_number(actual, G.last_crit)
 	G.combat_message.emit("-%d" % actual, "damage")
 	if not aggressive and state == State.IDLE:
 		state = State.CHASE
@@ -323,6 +330,7 @@ func _drop_loot(drops: Array) -> void:
 				G.add_item(entry["id"], qty)
 				G.on_collect(entry["id"], qty)
 				G.combat_message.emit("Loot: %s x%d" % [Data.ITEMS[entry["id"]]["name"], qty], "loot")
+				_spawn_drop_orb(entry["id"])
 		elif entry.has("pool"):
 			if randf() < entry.get("chance", 0.08):
 				var pool: Array = Data.DROP_POOLS.get(entry["pool"], [])
@@ -330,11 +338,51 @@ func _drop_loot(drops: Array) -> void:
 					var item_id: String = pool[randi() % pool.size()]
 					G.add_item(item_id)
 					G.combat_message.emit("Loot: %s" % Data.ITEMS[item_id]["name"], "loot")
+					_spawn_drop_orb(item_id)
 		elif entry.has("gem"):
 			if randf() < entry.get("chance", 0.03):
 				var gem_id := Data.random_gem(entry["gem"])
 				G.add_item(gem_id)
 				G.combat_message.emit("Loot: %s" % Data.ITEMS[gem_id]["name"], "loot")
+				_spawn_drop_orb(gem_id)
+
+
+func _spawn_drop_orb(item_id: String) -> void:
+	var def := Data.ITEMS.get(item_id, {})
+	if def.is_empty():
+		return
+	# Quality color
+	var q_col: Color = Data.QUALITY_COLORS.get(def.get("quality", "common"), Color(0.8, 0.8, 0.8))
+	var orb := MeshInstance3D.new()
+	var sm := SphereMesh.new(); sm.radius = 0.22; sm.height = 0.44
+	orb.mesh = sm
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = q_col
+	mat.emission_enabled = true
+	mat.emission = q_col * 1.2
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	orb.material_override = mat
+	var offset := Vector3(randf_range(-0.8, 0.8), 0.3, randf_range(-0.8, 0.8))
+	orb.position = global_position + offset
+	get_parent().add_child(orb)
+	# Name label
+	var lbl := Label3D.new()
+	lbl.text = def.get("name", "?")
+	lbl.font_size = 18
+	lbl.modulate = q_col
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.no_depth_test = true
+	lbl.position = orb.position + Vector3(0, 0.6, 0)
+	get_parent().add_child(lbl)
+	# Float and fade after 8 seconds
+	var tw := get_tree().create_tween()
+	tw.tween_property(orb, "position:y", orb.position.y + 0.3, 1.0)
+	tw.tween_interval(7.0)
+	tw.tween_property(orb, "modulate:a", 0.0, 0.8)
+	tw.tween_callback(orb.queue_free)
+	var tw2 := get_tree().create_tween()
+	tw2.tween_interval(8.0)
+	tw2.tween_callback(lbl.queue_free)
 
 
 func _despawn() -> void:

@@ -20,17 +20,21 @@ extends CanvasLayer
 @onready var target_lv_lb  : Label = $TargetFrame/VBox/TargetLevel
 @onready var target_hp_bar : ProgressBar = $TargetFrame/VBox/TargetHP
 
-@onready var skill_bar   : HBoxContainer = $SkillBar
-@onready var minimap_vp  : SubViewport = $MinimapContainer/MinimapViewport
-@onready var minimap_cam : Camera3D    = $MinimapContainer/MinimapViewport/MinimapCam
+@onready var skill_bar       : HBoxContainer = $SkillBar
+@onready var minimap_vp      : SubViewport = $MinimapContainer/MinimapViewport
+@onready var minimap_cam     : Camera3D    = $MinimapContainer/MinimapViewport/MinimapCam
+@onready var minimap_container: SubViewportContainer = $MinimapContainer
 
 @onready var combat_log  : VBoxContainer = $CombatLog
 @onready var notif_box   : VBoxContainer = $Notifications
 @onready var status_row  : HBoxContainer = $StatusEffects
 
-var skill_slots : Array = []
-var skill_cds_ui: Array = []
-var player_node : Node3D = null
+var skill_slots   : Array = []
+var skill_cds_ui  : Array = []
+var player_node   : Node3D = null
+var minimap_dots  : Control = null
+var chat_input    : LineEdit = null
+var time_label    : Label   = null
 
 var _target_ref : Node = null
 
@@ -51,6 +55,21 @@ func _ready() -> void:
 	# Share the main 3D world with the minimap SubViewport
 	if minimap_vp:
 		minimap_vp.world_3d = get_viewport().world_3d
+	# Dots overlay drawn on top of the 3D minimap render
+	minimap_dots = Control.new()
+	minimap_dots.name = "MinimapDots"
+	minimap_dots.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	minimap_dots.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	minimap_dots.draw.connect(func(): _draw_minimap_dots())
+	minimap_container.add_child(minimap_dots)
+	# Chat input and clock
+	_build_chat_input()
+	_build_time_label()
+	# Boss kill announcements in chat
+	G.mob_killed.connect(func(mid, mname, xp, gold):
+		var def := Data.MONSTERS.get(mid, {})
+		if def.get("boss", false):
+			_add_chat_msg("[ BOSS ] %s sconfitto!" % mname, "system"))
 
 
 func _process(delta: float) -> void:
@@ -59,6 +78,11 @@ func _process(delta: float) -> void:
 	_update_minimap()
 	_update_buffs_ui()
 	_update_zone()
+	_update_time_label()
+	# Hide chat input if player pressed Escape
+	if chat_input and chat_input.has_focus() and Input.is_action_just_pressed("ui_cancel"):
+		chat_input.visible = false
+		chat_input.release_focus()
 
 
 # ── Player HUD ────────────────────────────────────────────────
@@ -243,6 +267,51 @@ func _update_minimap() -> void:
 		return
 	var p := player_node.global_position
 	minimap_cam.global_position = Vector3(p.x, p.y + 150.0, p.z)
+	if minimap_dots:
+		minimap_dots.queue_redraw()
+
+
+func _draw_minimap_dots() -> void:
+	if minimap_dots == null or player_node == null:
+		return
+	var sz  := minimap_dots.size
+	var ctr := sz * 0.5
+	# Camera shows 200 world units wide/tall
+	var sc  := sz.x / 200.0
+	var pp  := player_node.global_position
+
+	# Player — blue dot with direction tick
+	minimap_dots.draw_circle(ctr, 4.5, Color(0.25, 0.7, 1.0))
+
+	# Monsters — red (boss = larger brighter)
+	for mob in get_tree().get_nodes_in_group("monsters"):
+		var mp := mob.global_position
+		var dx := (mp.x - pp.x) * sc
+		var dz := (mp.z - pp.z) * sc
+		var dp := ctr + Vector2(dx, dz)
+		if not Rect2(Vector2.ZERO, sz).has_point(dp):
+			continue
+		var boss_flag: bool = mob.get("is_boss") == true
+		var col := Color(1.0, 0.15, 0.15) if boss_flag else Color(0.9, 0.4, 0.3)
+		minimap_dots.draw_circle(dp, 5.0 if boss_flag else 2.5, col)
+
+	# NPCs — teal
+	for npc in get_tree().get_nodes_in_group("npcs"):
+		var np := npc.global_position
+		var dx := (np.x - pp.x) * sc
+		var dz := (np.z - pp.z) * sc
+		var dp := ctr + Vector2(dx, dz)
+		if Rect2(Vector2.ZERO, sz).has_point(dp):
+			minimap_dots.draw_circle(dp, 3.0, Color(0.3, 0.9, 0.55))
+
+	# Dungeon entrances — gold diamond
+	for d in get_tree().get_nodes_in_group("dungeons"):
+		var gp := d.global_position
+		var dx := (gp.x - pp.x) * sc
+		var dz := (gp.z - pp.z) * sc
+		var dp := ctr + Vector2(dx, dz)
+		if Rect2(Vector2.ZERO, sz).has_point(dp):
+			minimap_dots.draw_circle(dp, 5.0, Color(1.0, 0.85, 0.2))
 
 
 # ── Zone label ────────────────────────────────────────────────
@@ -275,9 +344,12 @@ func _add_combat_msg(text: String, kind: String) -> void:
 	lbl.text = text
 	match kind:
 		"damage":  lbl.add_theme_color_override("font_color", Color(1.0, 0.55, 0.4))
+		"crit":    lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.15))
 		"damage_received": lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 		"heal":    lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.5))
 		"loot":    lbl.add_theme_color_override("font_color", Color(0.9, 0.75, 0.3))
+		"chat":    lbl.add_theme_color_override("font_color", Color(0.92, 0.88, 0.82))
+		"system":  lbl.add_theme_color_override("font_color", Color(0.7, 0.55, 1.0))
 		_:         lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 	lbl.add_theme_font_size_override("font_size", 12)
 	combat_log.add_child(lbl)
@@ -350,3 +422,77 @@ func show_death_overlay(respawn_secs: float) -> void:
 func _find_player() -> Node3D:
 	var pl := get_tree().get_nodes_in_group("player")
 	return pl[0] if pl.size() > 0 else null
+
+
+# ── Chat ──────────────────────────────────────────────────────
+
+func _build_chat_input() -> void:
+	chat_input = LineEdit.new()
+	chat_input.placeholder_text = "/ per chattare  (Invio per inviare)"
+	chat_input.custom_minimum_size = Vector2(350, 30)
+	chat_input.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	chat_input.anchor_top   = 1.0; chat_input.anchor_bottom = 1.0
+	chat_input.offset_left  = 10;  chat_input.offset_right  = 360
+	chat_input.offset_top   = -88; chat_input.offset_bottom = -58
+	var sf := StyleBoxFlat.new()
+	sf.bg_color = Color(0.06, 0.04, 0.02, 0.88)
+	sf.border_color = Color(0.4, 0.25, 0.08)
+	sf.set_border_width_all(1)
+	chat_input.add_theme_stylebox_override("normal", sf)
+	chat_input.add_theme_stylebox_override("focus", sf)
+	chat_input.add_theme_color_override("font_color", Color(0.92, 0.84, 0.70))
+	chat_input.add_theme_color_override("font_placeholder_color", Color(0.5, 0.4, 0.25))
+	chat_input.add_theme_font_size_override("font_size", 12)
+	chat_input.visible = false
+	chat_input.text_submitted.connect(_on_chat_submit)
+	add_child(chat_input)
+
+
+func _on_chat_submit(text: String) -> void:
+	chat_input.visible = false
+	chat_input.release_focus()
+	var t := text.strip_edges()
+	chat_input.text = ""
+	if t.length() == 0:
+		return
+	var pname := G.player_data.get("name", "Avventuriero")
+	_add_chat_msg("[%s]: %s" % [pname, t], "chat")
+
+
+func _add_chat_msg(text: String, kind: String) -> void:
+	_add_combat_msg(text, kind)
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_SLASH and (chat_input == null or not chat_input.has_focus()):
+			if chat_input:
+				chat_input.visible = true
+				chat_input.grab_focus()
+				chat_input.text = ""
+				get_viewport().set_input_as_handled()
+
+
+# ── Clock ─────────────────────────────────────────────────────
+
+func _build_time_label() -> void:
+	time_label = Label.new()
+	time_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	time_label.anchor_left  = 1.0; time_label.anchor_right  = 1.0
+	time_label.offset_left  = -196; time_label.offset_right = -6
+	time_label.offset_top   = 198; time_label.offset_bottom = 218
+	time_label.add_theme_color_override("font_color", Color(0.88, 0.82, 0.55))
+	time_label.add_theme_font_size_override("font_size", 11)
+	time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(time_label)
+
+
+func _update_time_label() -> void:
+	if time_label == null:
+		return
+	var world := get_tree().root.get_node_or_null("Main/World")
+	if world and "day_time" in world:
+		var h := int(world.day_time) % 24
+		var m := int((world.day_time - floor(world.day_time)) * 60)
+		var period := "☀" if h >= 6 and h < 18 else "🌙"
+		time_label.text = "%s %02d:%02d" % [period, h, m]

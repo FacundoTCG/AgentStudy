@@ -313,12 +313,16 @@ func spend_gold(amount: int) -> bool:
 
 # ─── Combat helpers ───────────────────────────────────────────
 
+var last_crit := false   # set by calc_damage, read by callers for visuals
+
+
 func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float = 1.0, uses_matk: bool = false) -> int:
 	var raw := attacker.get("matk" if uses_matk else "atk", 0) * mult
 	var def_val := defender.get("def", 0)
 	var dmg := maxi(1, int(raw * (100.0 / (100.0 + def_val))))
 	var crit_chance := attacker.get("crit", 5) / 100.0
-	if randf() < crit_chance:
+	last_crit = randf() < crit_chance
+	if last_crit:
 		dmg = int(dmg * 1.8)
 	return dmg
 

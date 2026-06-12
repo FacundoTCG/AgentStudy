@@ -24,6 +24,11 @@ var spawned_mobs   : Dictionary = {}
 var spawned_npcs   : Dictionary = {}
 var spawned_stones : Array = []
 
+var sun_light      : DirectionalLight3D = null
+var world_env_node : WorldEnvironment   = null
+var day_time       : float = 8.0          # in-game hour 0–24
+const DAY_DURATION := 600.0               # real seconds per full in-game day
+
 
 func _ready() -> void:
 	_load_scenes()
@@ -35,6 +40,7 @@ func _ready() -> void:
 	_spawn_zone_monsters()
 	_spawn_world_bosses()
 	_spawn_stones()
+	_spawn_dungeon_entrances()
 	_bake_nav()
 
 	# Spawn player
@@ -47,6 +53,28 @@ func _ready() -> void:
 
 	# Sky / environment
 	_setup_environment()
+	set_process(true)
+
+
+func _process(delta: float) -> void:
+	day_time = fmod(day_time + delta * 24.0 / DAY_DURATION, 24.0)
+	_update_daynight()
+
+
+func _update_daynight() -> void:
+	if sun_light == null:
+		return
+	# Normalize: 0=6am (dawn), 0.5=18pm (dusk), wraps through midnight
+	var progress := fmod(day_time - 6.0 + 24.0, 24.0) / 24.0
+	var sun_x := -sin(progress * TAU) * 90.0
+	sun_light.rotation_degrees = Vector3(sun_x, 30.0, 0.0)
+	var energy_norm := clampf((sin(progress * TAU) + 1.0) * 0.5, 0.0, 1.0)
+	sun_light.light_energy = lerp(0.15, 1.3, energy_norm)
+	if energy_norm > 0.25:
+		var golden := 1.0 - abs(energy_norm - 0.5) * 2.0
+		sun_light.light_color = Color(1.0, 0.82 + golden * 0.1, 0.65 + energy_norm * 0.15)
+	else:
+		sun_light.light_color = Color(0.35, 0.42, 0.75)  # moonlight
 
 
 func _load_scenes() -> void:
@@ -390,6 +418,79 @@ func _color_player_by_class(p: Node3D) -> void:
 		head.material_override = mat
 
 
+func _spawn_dungeon_entrances() -> void:
+	# Portal gates between zones — two glowing pillars + vertical disc + Label3D
+	var portals := [
+		[Vector2( 400, -800), "Grotta dei Banditi"],
+		[Vector2(-600,  400), "Bosco Maledetto"],
+		[Vector2( 900,  200), "Rovine di Metin"],
+		[Vector2(-300, -900), "Cripta del Re Orchetto"],
+		[Vector2( 700,  700), "Torre dell'Oscurità"],
+		[Vector2(-900,  600), "Vulcano Infernale"],
+	]
+	var pillar_mat := StandardMaterial3D.new()
+	pillar_mat.albedo_color = Color(0.28, 0.18, 0.55)
+	pillar_mat.emission_enabled = true
+	pillar_mat.emission       = Color(0.5, 0.3, 1.0) * 0.5
+	pillar_mat.roughness      = 0.4
+
+	var disc_mat := StandardMaterial3D.new()
+	disc_mat.albedo_color = Color(0.35, 0.25, 0.85, 0.7)
+	disc_mat.emission_enabled = true
+	disc_mat.emission    = Color(0.55, 0.4, 1.0) * 0.8
+	disc_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	disc_mat.cull_mode   = BaseMaterial3D.CULL_DISABLED
+
+	for pdef in portals:
+		var c2 : Vector2 = pdef[0]
+		var pname : String = pdef[1]
+		var py : float = _get_height(c2.x, c2.y)
+
+		# Two pillars flanking the portal
+		for side in [-1.6, 1.6]:
+			var pm := CylinderMesh.new()
+			pm.top_radius = 0.38; pm.bottom_radius = 0.52; pm.height = 4.0
+			var pmi := MeshInstance3D.new()
+			pmi.mesh = pm; pmi.material_override = pillar_mat
+			pmi.position = Vector3(c2.x + side, py + 2.0, c2.y)
+			add_child(pmi)
+			# Cap sphere
+			var cap_m := SphereMesh.new(); cap_m.radius = 0.5; cap_m.height = 1.0
+			var cap_mat := StandardMaterial3D.new()
+			cap_mat.albedo_color = Color(0.7, 0.5, 1.0)
+			cap_mat.emission_enabled = true
+			cap_mat.emission = Color(0.8, 0.6, 1.0) * 1.2
+			var cap_mi := MeshInstance3D.new()
+			cap_mi.mesh = cap_m; cap_mi.material_override = cap_mat
+			cap_mi.position = Vector3(c2.x + side, py + 4.5, c2.y)
+			add_child(cap_mi)
+
+		# Vertical portal disc
+		var disc_m := CylinderMesh.new()
+		disc_m.top_radius = 1.6; disc_m.bottom_radius = 1.6; disc_m.height = 0.08
+		var disc_mi := MeshInstance3D.new()
+		disc_mi.mesh = disc_m; disc_mi.material_override = disc_mat
+		disc_mi.position = Vector3(c2.x, py + 2.5, c2.y)
+		disc_mi.rotation_degrees = Vector3(90, 0, 0)
+		add_child(disc_mi)
+
+		# Portal name
+		var lbl := Label3D.new()
+		lbl.text = "⬛ %s" % pname
+		lbl.font_size = 30
+		lbl.modulate = Color(0.85, 0.7, 1.0)
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.no_depth_test = true
+		lbl.position = Vector3(c2.x, py + 5.6, c2.y)
+		add_child(lbl)
+
+		# Invisible Node3D marker for minimap dot
+		var marker := Node3D.new()
+		marker.position = Vector3(c2.x, py, c2.y)
+		marker.add_to_group("dungeons")
+		add_child(marker)
+
+
 func _bake_nav() -> void:
 	if nav_region == null:
 		return
@@ -425,20 +526,20 @@ func _setup_environment() -> void:
 	env.tonemap_exposure = 1.1
 	env.glow_enabled = false
 
-	var wenv := WorldEnvironment.new()
-	wenv.environment = env
-	add_child(wenv)
+	world_env_node = WorldEnvironment.new()
+	world_env_node.environment = env
+	add_child(world_env_node)
 
 	# Sun
-	var sun := DirectionalLight3D.new()
-	sun.light_color = Color(1.0, 0.92, 0.82)
-	sun.light_energy = 1.3
-	sun.rotation_degrees = Vector3(-42, 30, 0)
-	sun.shadow_enabled = true
-	sun.shadow_bias = 0.05
-	add_child(sun)
+	sun_light = DirectionalLight3D.new()
+	sun_light.light_color = Color(1.0, 0.92, 0.82)
+	sun_light.light_energy = 1.3
+	sun_light.rotation_degrees = Vector3(-42, 30, 0)
+	sun_light.shadow_enabled = true
+	sun_light.shadow_bias = 0.05
+	add_child(sun_light)
 
-	# Ambient fill
+	# Ambient fill (stays constant)
 	var fill := DirectionalLight3D.new()
 	fill.light_color = Color(0.5, 0.55, 0.7)
 	fill.light_energy = 0.25

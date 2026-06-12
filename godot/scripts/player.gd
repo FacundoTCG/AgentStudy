@@ -178,6 +178,11 @@ func _physics_process(delta: float) -> void:
 		if anim.has_animation(anim_name) and anim.current_animation != anim_name:
 			anim.play(anim_name)
 
+	# Mesh bob (simulates run/idle animation without AnimationPlayer tracks)
+	if mesh_root:
+		var t_bob := Time.get_ticks_msec() * 0.001
+		mesh_root.position.y = sin(t_bob * (7.0 if is_moving else 1.5)) * (0.05 if is_moving else 0.022)
+
 	# Auto-attack loop
 	if is_instance_valid(target_mob) and target_mob.has_method("take_damage"):
 		var dist := global_position.distance_to(target_mob.global_position)
@@ -200,6 +205,8 @@ func _perform_attack() -> void:
 	var pd := G.player_data
 	var dmg := G.calc_damage(pd, target_mob.get_stats())
 	target_mob.take_damage(dmg, self)
+	if G.last_crit:
+		G.combat_message.emit("CRITICO! -%d" % dmg, "crit")
 	atk_cd = ATK_CD
 	if anim and anim.has_animation("attack"):
 		anim.play("attack")
