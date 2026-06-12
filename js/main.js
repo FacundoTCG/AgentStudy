@@ -74,8 +74,13 @@ function createPlayer(classKey, name) {
     dir: 0,
     // Combat state
     atkCd: 0,
-    skillCds: [0, 0, 0, 0],
+    skillCds: [0, 0, 0, 0, 0, 0, 0, 0],
     potCd: 0,
+    // Progression extras
+    skillLevels: {},
+    skillPoints: 0,
+    activeMount: null,
+    hairstyle: null,
     // Targeting
     target: null,
     // Status effects
@@ -119,35 +124,47 @@ function initWorld() {
     gameState.renderer.updateEntityPosition(npcDef.id, npcDef.x, npcDef.y, 0, 'idle');
   });
 
-  // Spawn Demon Stones
-  const stonePositions = [
-    { x: 700, y: 2300 }, { x: 2500, y: 600 }, { x: 400, y: 500 },
-    { x: 2800, y: 2800 }, { x: 1100, y: 2700 }, { x: 2200, y: 1400 },
-  ];
-  stonePositions.forEach((pos, i) => {
-    const id = `stone_${i}`;
-    const mesh = gameState.renderer.createStoneMesh();
-    const stone = {
-      id, x: pos.x, y: pos.y,
-      hp: 800, maxHp: 800,
-      spawnTimer: 8, minions: 0,
-      type: null, // not a mob
-    };
-    gameState.stones.push(stone);
-    gameState.renderer.addEntity(id, mesh, { type: 'stone' });
-    gameState.renderer.updateEntityPosition(id, pos.x, pos.y, 0, 'idle');
-  });
-
-  // Spawn initial mobs via MonsterAI
+  // Per-zone spawns: mobs, tiered Demon Stones and the zone boss
+  let stoneIdx = 0;
+  const tiers = window.GameData.STONE_TIERS;
   mapData.zones.forEach(zone => {
-    if (zone.safe || !zone.monsters) return;
-    const count = Math.floor(zone.w * zone.h * (zone.density || 0.006));
-    const cap = Math.min(count, 18);
-    for (let i = 0; i < cap; i++) {
+    if (zone.safe || !zone.monsters || !zone.monsters.length) return;
+
+    // Mobs (capped per zone)
+    const count = clamp(Math.round(zone.w * zone.h * (zone.density || 0.00001)), 8, 20);
+    for (let i = 0; i < count; i++) {
       const typeId = zone.monsters[Math.floor(Math.random() * zone.monsters.length)];
       const x = zone.x + Math.random() * zone.w;
       const y = zone.y + Math.random() * zone.h;
       gameState.monsterAI.spawnMob(typeId, x, y);
+    }
+
+    // Zone boss (one per zone, where defined)
+    if (zone.boss && window.GameData.MONSTERS[zone.boss]) {
+      gameState.monsterAI.spawnMob(zone.boss, zone.x + zone.w / 2, zone.y + zone.h / 2);
+    }
+
+    // Two tiered Demon Stones per zone
+    const tier = tiers ? tiers[Math.min((zone.tier || 1) - 1, tiers.length - 1)] : null;
+    for (let s = 0; s < 2; s++) {
+      const id = `stone_${stoneIdx++}`;
+      const sx = zone.x + 120 + Math.random() * Math.max(120, zone.w - 240);
+      const sy = zone.y + 120 + Math.random() * Math.max(120, zone.h - 240);
+      const hp = tier ? tier.hp : 800;
+      const stone = {
+        id, x: sx, y: sy, hp, maxHp: hp,
+        spawnTimer: 8, minions: 0, type: null,
+        tier: zone.tier || 1,
+        name: tier ? tier.name : 'Pietra Demoniaca',
+        xp: tier ? tier.xp : 400,
+        goldRange: tier ? tier.gold : [80, 160],
+        maxMinions: tier ? tier.maxMinions : 4,
+        zoneMonsters: zone.monsters,
+      };
+      gameState.stones.push(stone);
+      const mesh = gameState.renderer.createStoneMesh();
+      gameState.renderer.addEntity(id, mesh, { type: 'stone' });
+      gameState.renderer.updateEntityPosition(id, sx, sy, 0, 'idle');
     }
   });
 }
@@ -179,16 +196,15 @@ function setupInput() {
 
     if (gameState.paused || gameState.player?.dead) return;
 
-    if (k === '1') gameState.emit('useSkill', { index: 0 });
-    if (k === '2') gameState.emit('useSkill', { index: 1 });
-    if (k === '3') gameState.emit('useSkill', { index: 2 });
-    if (k === '4') gameState.emit('useSkill', { index: 3 });
-    if (k === ' ') { e.preventDefault(); gameState.emit('usePotion', {}); }
+    if (k >= '1' && k <= '8') gameState.emit('useSkill', { index: parseInt(k, 10) - 1 });
+    if (k === ' ' || k === 'q') { e.preventDefault(); gameState.emit('usePotion', {}); }
+    if (k === 'r') gameState.emit('toggleMount', {});
     if (k === 'tab') { e.preventDefault(); selectNearestEnemy(); }
     if (k === 'i') gameState.ui.togglePanel('inventory');
     if (k === 'j') gameState.ui.togglePanel('quests');
     if (k === 'c') gameState.ui.togglePanel('character');
     if (k === 'm') gameState.ui.togglePanel('map');
+    if (k === 'k') gameState.ui2?.toggleExtPanel('skills');
     if (k === 'enter') document.getElementById('chat-input')?.focus();
   });
 
@@ -309,7 +325,7 @@ function setupEventHandlers() {
   const gs = gameState;
 
   gs.on('useSkill', ({ index }) => {
-    if (index < 3) gs.combat.useSkill(index);
+    if (index < 8) gs.combat.useSkill(index);
   });
 
   gs.on('usePotion', () => {
@@ -637,6 +653,9 @@ function startGame(classKey, playerName, savedState) {
   gameState.dungeon = new window.DungeonSystem(gameState);
   gameState.saveSystem = new window.SaveSystem(gameState);
 
+  // Extended systems (forgia, alchimia, cavalcature, barbiere, punti abilità)
+  if (window.initExtendedSystems) window.initExtendedSystems(gameState);
+
   // Setup event handlers
   setupEventHandlers();
 
@@ -669,6 +688,7 @@ window.bootstrapGame = function(canvas) {
   // Initialize renderer first (needs canvas)
   gameState.renderer = new window.GameRenderer(canvas);
   gameState.ui = new window.UIManager(gameState);
+  if (window.UIExtensions) gameState.ui2 = new window.UIExtensions(gameState);
   window.addEventListener('resize', () => gameState.renderer.resize());
 
   // Check for existing save

@@ -85,15 +85,19 @@ class CombatSystem {
     if (entity.hp <= 0) this._killEntity(entity);
   }
 
-  // Use a skill by index
+  // Use a skill by index (0-7); damage scales with skill level (+8%/lv)
   useSkill(index) {
     const p = this.gs.player;
     if (!p || p.dead) return;
     const cls = window.GameData.CLASSES[p.classKey];
     const skId = cls.skills[index];
     if (!skId) return;
-    const sk = window.GameData.SKILLS[skId];
+    let sk = window.GameData.SKILLS[skId];
     if (!sk) return;
+    const skillLv = (p.skillLevels && p.skillLevels[skId]) || 1;
+    if (skillLv > 1 && sk.mult) {
+      sk = { ...sk, mult: sk.mult * (1 + 0.08 * (skillLv - 1)) };
+    }
     if (p.skillCds[index] > 0) {
       this.gs.ui.showNotification(`${sk.name}: in ricarica (${Math.ceil(p.skillCds[index])}s)`, 'info');
       return;
@@ -335,17 +339,18 @@ class CombatSystem {
       // Respawn
       setTimeout(() => this.gs.monsterAI.respawnMob(type.id), 8000 + Math.random() * 4000);
     } else {
-      // Demon stone
-      xp = window.GameData.STONE?.xp || 400;
-      const sr = window.GameData.STONE?.gold || [50, 150];
+      // Demon stone (tiered: entity carries its own xp/gold from STONE_TIERS)
+      xp = entity.xp || window.GameData.STONE?.xp || 400;
+      const sr = entity.goldRange || window.GameData.STONE?.gold || [50, 150];
       goldAmount = sr[0] + Math.floor(Math.random() * (sr[1] - sr[0] + 1));
       p.gold += goldAmount;
       window.spawnDrop(entity.x, entity.y, sr, [
         { item: 'demon_stone_shard', chance: 0.8, qty: [1, 2] },
         { item: 'gold_coin', chance: 0.5, qty: [1, 3] },
         { item: 'hp_potion_medium', chance: 0.6, qty: [1, 2] },
+        { item: 'pietra_raffinazione', chance: 0.15 + (entity.tier || 1) * 0.03, qty: [1, 1] },
       ]);
-      this.gs.ui.showNotification('Pietra Demoniaca distrutta!', 'levelup');
+      this.gs.ui.showNotification(`${entity.name || 'Pietra Demoniaca'} distrutta!`, 'levelup');
       const stIdx = this.gs.stones.indexOf(entity);
       if (stIdx !== -1) this.gs.stones.splice(stIdx, 1);
       this.gs.renderer.removeEntity(entity.id);
@@ -430,7 +435,7 @@ class CombatSystem {
 
     p.atkCd = Math.max(0, (p.atkCd || 0) - dt);
     p.potCd = Math.max(0, (p.potCd || 0) - dt);
-    for (let i = 0; i < 4; i++) p.skillCds[i] = Math.max(0, (p.skillCds[i] || 0) - dt);
+    for (let i = 0; i < 8; i++) p.skillCds[i] = Math.max(0, (p.skillCds[i] || 0) - dt);
 
     // Buff durations
     p.buffs = p.buffs.filter(b => {
@@ -579,10 +584,13 @@ class MonsterAI {
     const p = this.gs.player;
     if (Math.hypot(stone.x - p.x, stone.y - p.y) > 420) return;
     stone.spawnTimer = (stone.spawnTimer || 8) - dt;
-    if (stone.spawnTimer <= 0 && (stone.minions || 0) < 4) {
+    const cap = stone.maxMinions || 4;
+    if (stone.spawnTimer <= 0 && (stone.minions || 0) < cap) {
       stone.spawnTimer = 8 + Math.random() * 4;
-      const types = ['wolf', 'bandit', 'boar'];
-      const typeId = types[Math.floor(Math.random() * types.length)];
+      // Evoca mostri della zona della pietra (fallback: mob base)
+      const types = (stone.zoneMonsters && stone.zoneMonsters.length)
+        ? stone.zoneMonsters : ['wolf', 'bandit', 'boar'];
+      const typeId = types[Math.floor(Math.random() * Math.min(3, types.length))];
       const a = Math.random() * Math.PI * 2;
       this.spawnMob(typeId, stone.x + Math.cos(a) * 70, stone.y + Math.sin(a) * 70, { fromStone: stone });
       stone.minions = (stone.minions || 0) + 1;
@@ -630,13 +638,27 @@ class MonsterAI {
   }
 
   respawnStone() {
+    // Pick a random combat zone and spawn a stone of its tier
     const map = window.GameData.MAPS.village;
-    const x = 300 + Math.random() * 2600;
-    const y = 300 + Math.random() * 2600;
-    if (Math.hypot(x - 1600, y - 1600) < 500) return; // avoid village
+    const zones = (map.zones || []).filter(z => !z.safe && z.monsters?.length);
+    if (!zones.length) return;
+    const zone = zones[Math.floor(Math.random() * zones.length)];
+    const x = zone.x + 100 + Math.random() * Math.max(100, zone.w - 200);
+    const y = zone.y + 100 + Math.random() * Math.max(100, zone.h - 200);
+    const tiers = window.GameData.STONE_TIERS;
+    const tier = tiers ? tiers[Math.min((zone.tier || 1) - 1, tiers.length - 1)] : null;
+    const hp = tier ? tier.hp : 800;
     const id = `stone_${Date.now()}`;
     const mesh = this.gs.renderer.createStoneMesh();
-    const stone = { id, x, y, hp: 800, maxHp: 800, spawnTimer: 8, minions: 0, type: null };
+    const stone = {
+      id, x, y, hp, maxHp: hp, spawnTimer: 8, minions: 0, type: null,
+      tier: zone.tier || 1,
+      name: tier ? tier.name : 'Pietra Demoniaca',
+      xp: tier ? tier.xp : 400,
+      goldRange: tier ? tier.gold : [80, 160],
+      maxMinions: tier ? tier.maxMinions : 4,
+      zoneMonsters: zone.monsters,
+    };
     this.gs.stones.push(stone);
     this.gs.renderer.addEntity(id, mesh, { type: 'stone' });
     this.gs.renderer.updateEntityPosition(id, x, y, 0, 'idle');
@@ -654,22 +676,41 @@ class InventorySystem {
     const itemDef = window.GameData.ITEMS[itemId];
     if (!itemDef) return false;
     const inv = p.inventory || (p.inventory = []);
+    const SLOTS = 45;
 
     // Try to stack
     if (itemDef.stackable) {
       const existing = inv.find(e => e && e.id === itemId);
       if (existing) { existing.qty = (existing.qty || 1) + quantity; this.save(); return true; }
+      for (let i = 0; i < SLOTS; i++) {
+        if (!inv[i] || !inv[i].id) {
+          inv[i] = { id: itemId, qty: quantity };
+          this.save();
+          return true;
+        }
+      }
+      return false;
     }
 
-    // Find empty slot (0-29)
-    for (let i = 0; i < 30; i++) {
-      if (!inv[i] || !inv[i].id) {
-        inv[i] = { id: itemId, qty: quantity };
-        this.save();
-        return true;
+    // Non-stackable: each unit is an instance with enh/bonuses/gems
+    let added = 0;
+    for (let q = 0; q < quantity; q++) {
+      let placed = false;
+      for (let i = 0; i < SLOTS; i++) {
+        if (!inv[i] || !inv[i].id) {
+          inv[i] = {
+            id: itemId, qty: 1, enh: 0,
+            bonuses: (itemDef.slot && window.ItemForge) ? window.ItemForge.rollBonuses(itemDef) : [],
+            gems: [],
+          };
+          placed = true; added++;
+          break;
+        }
       }
+      if (!placed) break;
     }
-    return false; // full
+    if (added > 0) { this.save(); this.gs.emit('inventoryChanged', {}); }
+    return added === quantity;
   }
 
   removeItem(itemId, quantity = 1) {
@@ -702,30 +743,36 @@ class InventorySystem {
     const equip = p.equipped || (p.equipped = {});
     const slot = itemDef.slot;
 
-    // Unequip current if any
+    // Swap: previous equipped instance (with its enh/bonuses/gems) goes
+    // back to the inventory slot, the new instance is equipped whole
     if (equip[slot]) {
-      const oldId = equip[slot].id;
-      // put back in inventory at the same slot
-      p.inventory[slotIndex] = { id: oldId, qty: 1 };
+      p.inventory[slotIndex] = { ...equip[slot] };
     } else {
       p.inventory[slotIndex] = null;
     }
 
-    equip[slot] = { id: entry.id };
+    equip[slot] = { ...entry };
     this.recalcStats();
     this.save();
-    this.gs.ui.showNotification(`Equipaggiato: ${itemDef.name}`, 'success');
+    this.gs.emit('inventoryChanged', {});
+    this.gs.ui.showNotification(`Equipaggiato: ${itemDef.name}${entry.enh ? ' +' + entry.enh : ''}`, 'success');
   }
 
   unequipItem(slot) {
     const p = this.gs.player;
     const equip = p.equipped || {};
     if (!equip[slot]) return;
-    const ok = this.addItem(equip[slot].id, 1);
-    if (!ok) { this.gs.ui.showNotification('Inventario pieno!', 'error'); return; }
+    // Preserve the instance data (enh/bonuses/gems) when unequipping
+    const inv = p.inventory || (p.inventory = []);
+    let placed = false;
+    for (let i = 0; i < 45; i++) {
+      if (!inv[i] || !inv[i].id) { inv[i] = { ...equip[slot] }; placed = true; break; }
+    }
+    if (!placed) { this.gs.ui.showNotification('Inventario pieno!', 'error'); return; }
     equip[slot] = null;
     this.recalcStats();
     this.save();
+    this.gs.emit('inventoryChanged', {});
   }
 
   recalcStats() {
@@ -743,20 +790,35 @@ class InventorySystem {
     p.speed = base.speed;
     p.crit = base.crit || 0.05;
 
-    // Equipment bonuses
+    // Equipment: base stats scaled by enhancement (+10% per livello),
+    // plus random bonuses and socketed gems
+    const applyStat = (stat, val) => {
+      if (stat === 'hp') p.maxHp += val;
+      else if (stat === 'mp') p.maxMp += val;
+      else if (p[stat] !== undefined) p[stat] += val;
+    };
     const equip = p.equipped || {};
     for (const [, item] of Object.entries(equip)) {
       if (!item) continue;
       const def = window.GameData.ITEMS[item.id];
-      if (!def || !def.stats) continue;
-      const s = def.stats;
-      if (s.hp) p.maxHp += s.hp;
-      if (s.mp) p.maxMp += s.mp;
-      if (s.atk) p.atk += s.atk;
-      if (s.matk) p.matk += s.matk;
-      if (s.def) p.def += s.def;
-      if (s.speed) p.speed += s.speed;
-      if (s.crit) p.crit += s.crit;
+      if (!def) continue;
+      const enhMult = 1 + 0.1 * (item.enh || 0);
+      for (const [stat, val] of Object.entries(def.stats || {})) {
+        if (stat === 'speedMult') continue;
+        const scaled = stat === 'crit' ? val * enhMult : Math.round(val * enhMult);
+        applyStat(stat, scaled);
+      }
+      for (const b of (item.bonuses || [])) applyStat(b.stat, b.val);
+      for (const gemId of (item.gems || [])) {
+        const gem = window.GameData.ITEMS[gemId];
+        for (const [stat, val] of Object.entries(gem?.stats || {})) applyStat(stat, val);
+      }
+    }
+
+    // Active mount: speed multiplier
+    if (p.activeMount) {
+      const mount = window.GameData.ITEMS[p.activeMount];
+      p.speed = Math.round(p.speed * (1 + (mount?.stats?.speedMult || 0)));
     }
 
     // Active buffs
@@ -854,6 +916,21 @@ class QuestSystem {
       this._checkCompletions();
       this.save();
     }
+  }
+
+  // Generic game events (e.g. 'enhance_success', 'mount_summon')
+  onEvent(eventId) {
+    const p = this.gs.player;
+    let updated = false;
+    for (const q of (p.activeQuests || [])) {
+      for (const obj of q.objectives) {
+        if (obj.type === 'event' && obj.target === eventId && obj.current < obj.count) {
+          obj.current++;
+          updated = true;
+        }
+      }
+    }
+    if (updated) { this._checkCompletions(); this.save(); }
   }
 
   onCollect(itemId, qty = 1) {
@@ -1083,6 +1160,10 @@ class SaveSystem {
           activeQuests: p.activeQuests || [],
           completedQuests: p.completedQuests || [],
           completedDungeons: p.completedDungeons || [],
+          skillLevels: p.skillLevels || {},
+          skillPoints: p.skillPoints,
+          activeMount: p.activeMount || null,
+          hairstyle: p.hairstyle || null,
         },
       };
       localStorage.setItem('ro_save', JSON.stringify(data));

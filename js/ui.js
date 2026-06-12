@@ -58,12 +58,12 @@ class UIManager {
   <div class="skill-group" id="skills-main"></div>
   <div class="skill-sep"></div>
   <div class="skill-group" id="skills-potion">
-    <div class="skill-slot" id="slot-potion" data-key="4">
+    <div class="skill-slot" id="slot-potion" data-key="q">
       <div class="skill-icon">🧪</div>
       <div class="skill-name">Pozione</div>
       <div class="skill-count" id="potion-count">3</div>
       <div class="skill-cd-overlay" id="cd-potion"></div>
-      <div class="slot-key">4</div>
+      <div class="slot-key">Q</div>
     </div>
   </div>
 </div>
@@ -97,9 +97,14 @@ class UIManager {
     <div class="panel-section-title">Equipaggiamento</div>
     <div id="equip-grid">
       <div class="equip-slot" data-slot="weapon" title="Arma">⚔<span class="slot-label">Arma</span></div>
-      <div class="equip-slot" data-slot="chest" title="Petto">🛡<span class="slot-label">Petto</span></div>
-      <div class="equip-slot" data-slot="ring" title="Anello">💍<span class="slot-label">Anello</span></div>
+      <div class="equip-slot" data-slot="body" title="Corpo">🛡<span class="slot-label">Corpo</span></div>
+      <div class="equip-slot" data-slot="head" title="Testa">🪖<span class="slot-label">Testa</span></div>
+      <div class="equip-slot" data-slot="shield" title="Scudo">🛡️<span class="slot-label">Scudo</span></div>
+      <div class="equip-slot" data-slot="boots" title="Stivali">🥾<span class="slot-label">Stivali</span></div>
+      <div class="equip-slot" data-slot="bracelet" title="Bracciale">⛓<span class="slot-label">Bracciale</span></div>
       <div class="equip-slot" data-slot="necklace" title="Collana">📿<span class="slot-label">Collana</span></div>
+      <div class="equip-slot" data-slot="earring" title="Orecchini">✨<span class="slot-label">Orecchini</span></div>
+      <div class="equip-slot" data-slot="ring" title="Anello">💍<span class="slot-label">Anello</span></div>
     </div>
     <div id="equipped-stats"></div>
   </div>
@@ -205,7 +210,7 @@ class UIManager {
 </div>
 
 <!-- Controls hint -->
-<div id="controls-hint">WASD: muovi · Spazio/Click: attacca · 1-4: abilità/pozione · Tab: bersaglio · I/J/C/M: pannelli · Esc: menu</div>
+<div id="controls-hint">WASD: muovi · Click: attacca · 1-8: abilità · Q/Spazio: pozione · R: cavalcatura · Tab: bersaglio · I/J/C/M/K: pannelli · Esc: menu</div>
 `;
   }
 
@@ -390,7 +395,7 @@ class UIManager {
     const grid = document.getElementById('inv-grid');
     if (!grid || !this.gs.player) return;
     const inv = this.gs.player.inventory || [];
-    const slots = 30;
+    const slots = 45;
     let html = '';
     for (let i = 0; i < slots; i++) {
       const entry = inv[i];
@@ -400,6 +405,7 @@ class UIManager {
         html += `<div class="inv-slot" data-index="${i}" data-empty="false" style="border-color:${q}">
           <div class="inv-icon">${this._itemIcon(item)}</div>
           ${entry.qty > 1 ? `<div class="inv-qty">${entry.qty}</div>` : ''}
+          ${entry.enh ? `<div class="inv-enh">+${entry.enh}</div>` : ''}
         </div>`;
       } else {
         html += `<div class="inv-slot empty" data-index="${i}" data-empty="true"></div>`;
@@ -453,14 +459,27 @@ class UIManager {
     const tip = document.getElementById('item-tooltip');
     if (!tip) return;
     const q = window.GameData.ITEM_QUALITY[item.quality];
+    const fmtVal = v => (typeof v === 'number' && v < 1 && v > 0 ? (v * 100).toFixed(1) + '%' : v);
     const statsStr = Object.entries(item.stats || {}).map(([k, v]) =>
-      `<div class="tip-stat">${this._statLabel(k)}: <b>${v > 0 ? '+' : ''}${typeof v === 'number' && v < 1 && v > 0 ? (v * 100).toFixed(1) + '%' : v}</b></div>`
+      `<div class="tip-stat">${this._statLabel(k)}: <b>${v > 0 ? '+' : ''}${fmtVal(v)}</b></div>`
     ).join('');
+    const bonusStr = (entry.bonuses || []).map(b =>
+      `<div class="tip-stat" style="color:#64b5f6">◆ ${this._statLabel(b.stat)}: <b>+${fmtVal(b.val)}</b></div>`
+    ).join('');
+    const gemStr = (entry.gems || []).map(gid => {
+      const g = window.GameData.ITEMS[gid];
+      return g ? `<div class="tip-stat" style="color:#ba68c8">💎 ${g.name}</div>` : '';
+    }).join('');
+    const socketStr = item.sockets
+      ? `<div class="tip-qty">Alloggiamenti: ${(entry.gems || []).length}/${item.sockets}</div>` : '';
     tip.innerHTML = `
-      <div class="tip-name" style="color:${q}">${item.name}</div>
+      <div class="tip-name" style="color:${q}">${item.name}${entry.enh ? ` <span style="color:#d4af37">+${entry.enh}</span>` : ''}</div>
       <div class="tip-quality">${item.quality.charAt(0).toUpperCase() + item.quality.slice(1)}</div>
       ${item.level ? `<div class="tip-level">Livello min: ${item.level}</div>` : ''}
       ${statsStr}
+      ${bonusStr}
+      ${gemStr}
+      ${socketStr}
       ${item.desc ? `<div class="tip-desc">${item.desc}</div>` : ''}
       <div class="tip-value">Valore: ${item.value} oro</div>
       ${entry.qty > 1 ? `<div class="tip-qty">Quantità: ${entry.qty}</div>` : ''}
@@ -1000,19 +1019,23 @@ class UIManager {
     if (!item) return '?';
     const icons = {
       sword: '⚔', dagger: '🗡', staff: '🔮', rod: '⚡',
-      armor: '🛡', consumable: '🧪', material: '📦',
-      ring: '💍', necklace: '📿',
+      helmet: '🪖', shield: '🛡️', boots: '🥾', bracelet: '⛓',
+      necklace: '📿', earring: '✨', ring: '💍',
+      armor: '🛡', consumable: '🧪', food: '🍜', material: '📦',
+      gem: '💎', mount: '🐎', hair: '💇', scroll: '📜',
     };
     return icons[item.subtype] || icons[item.type] || '📦';
   }
 
   _slotEmoji(slot) {
-    const m = { weapon: '⚔', chest: '🛡', ring: '💍', necklace: '📿' };
+    const m = { weapon: '⚔', body: '🛡', head: '🪖', shield: '🛡️', boots: '🥾',
+      bracelet: '⛓', necklace: '📿', earring: '✨', ring: '💍' };
     return m[slot] || '?';
   }
 
   _slotLabel(slot) {
-    const m = { weapon: 'Arma', chest: 'Petto', ring: 'Anello', necklace: 'Collana' };
+    const m = { weapon: 'Arma', body: 'Corpo', head: 'Testa', shield: 'Scudo', boots: 'Stivali',
+      bracelet: 'Bracciale', necklace: 'Collana', earring: 'Orecchini', ring: 'Anello' };
     return m[slot] || slot;
   }
 
