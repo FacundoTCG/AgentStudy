@@ -960,30 +960,35 @@ class DungeonSystem {
     for (const mob of this.gs.mobs) this.gs.renderer.removeEntity(mob.id);
     for (const stone of this.gs.stones) this.gs.renderer.removeEntity(stone.id);
 
-    // Teleport player to dungeon entrance
-    p.x = 1600; p.y = 1600;
+    // Lay out all floors side by side in world space, centred on the map
+    const gap = 150;
+    const totalW = def.floors.reduce((s, f) => s + (f.width || 1200), 0) + gap * (def.floors.length - 1);
+    let floorOffX = 1600 - totalW / 2;
+    let entryPos = null;
+
+    def.floors.forEach((floor, fi) => {
+      const offY = 1600 - (floor.height || 900) / 2;
+      for (const room of floor.rooms) {
+        const cx = floorOffX + room.x + room.w / 2;
+        const cy = offY + room.y + room.h / 2;
+        if (fi === 0 && room.type === 'entry' && !entryPos) entryPos = { x: cx, y: cy };
+        // room.monsters is a flat array of monster type ids
+        for (const monsterId of (room.monsters || [])) {
+          const mx = cx + (Math.random() - 0.5) * room.w * 0.7;
+          const my = cy + (Math.random() - 0.5) * room.h * 0.7;
+          this.gs.monsterAI.spawnMob(monsterId, mx, my);
+        }
+        if (room.boss) this.gs.monsterAI.spawnMob(room.boss, cx, cy);
+      }
+      floorOffX += (floor.width || 1200) + gap;
+    });
+
+    // Teleport player to the entry room
+    const start = entryPos || { x: 1600, y: 1600 };
+    p.x = start.x; p.y = start.y;
+    p.moveTarget = null;
     this.gs.renderer.updateEntityPosition('player', p.x, p.y, 0, 'idle');
     this.gs.renderer.setCameraTarget(p.x, p.y);
-
-    // Spawn dungeon mobs
-    const floor = def.floors[0];
-    let mIdx = 0;
-    for (const room of floor.rooms) {
-      if (room.monsters) {
-        const rx = 1600 + (room.x + room.w / 2) * 80 - 1600;
-        const ry = 1600 + (room.y + room.h / 2) * 80 - 1600;
-        for (const ms of room.monsters) {
-          for (let i = 0; i < ms.count; i++) {
-            const offsetX = (Math.random() - 0.5) * room.w * 60;
-            const offsetY = (Math.random() - 0.5) * room.h * 60;
-            this.gs.monsterAI.spawnMob(ms.id, rx + offsetX, ry + offsetY);
-          }
-        }
-      }
-      if (room.boss) {
-        this.gs.monsterAI.spawnMob(room.boss, 1600, 1600 - 400);
-      }
-    }
 
     this.gs.ui.addSystemMessage(`Sei entrato in: ${def.name}!`);
     this.gs.ui.showNotification(`Dungeon: ${def.name}`, 'info');
@@ -996,11 +1001,16 @@ class DungeonSystem {
     const def = window.GameData.DUNGEONS[dungeonId];
     if (!def) return;
 
-    const r = def.rewards;
+    const r = def.rewards || {};
     if (r.xp) this.gs.combat._giveXP(r.xp);
     if (r.gold) {
       const g = r.gold[0] + Math.floor(Math.random() * (r.gold[1] - r.gold[0] + 1));
       p.gold += g;
+    }
+    if (r.items) {
+      for (const ri of r.items) {
+        for (let i = 0; i < ri.qty; i++) this.gs.inventory.addItem(ri.id, 1);
+      }
     }
 
     this.gs.quests.onKill(bossId);

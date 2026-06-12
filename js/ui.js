@@ -664,40 +664,70 @@ class UIManager {
     document.getElementById('dialogue-text').textContent = npc.dialogue.greeting;
     const optEl = document.getElementById('dialogue-options');
     optEl.innerHTML = '';
+
+    // Quest options first: turn-ins (completable) and new quests to accept
+    const p = this.gs.player;
+    if (npc.quests && p) {
+      // Completable quests with this NPC
+      for (const aq of (p.activeQuests || [])) {
+        const def = window.GameData.QUESTS[aq.id];
+        if (def?.npc === npcId && aq.objectives.every(o => o.current >= o.count)) {
+          this._addDialogueOption(optEl, `✅ Consegna: ${def.name}`, () => {
+            this.gs.quests.completeQuest(aq.id, npcId);
+            this.closeDialogue();
+          });
+        }
+      }
+      // Available new quests
+      for (const def of this.gs.quests.getAvailable(npcId)) {
+        this._addDialogueOption(optEl, `📜 Accetta: ${def.name} (Lv ${def.level})`, () => {
+          this.gs.quests.startQuest(def.id);
+          this.closeDialogue();
+        });
+      }
+    }
+
     npc.dialogue.options.forEach(opt => {
-      const btn = document.createElement('button');
-      btn.className = 'dialogue-opt';
-      btn.textContent = opt.text;
-      btn.addEventListener('click', () => this._handleDialogueAction(opt, npc));
-      optEl.appendChild(btn);
+      this._addDialogueOption(optEl, opt.text, () => this._handleDialogueAction(opt, npc));
     });
+  }
+
+  _addDialogueOption(container, text, onClick) {
+    const btn = document.createElement('button');
+    btn.className = 'dialogue-opt';
+    btn.textContent = text;
+    btn.addEventListener('click', onClick);
+    container.appendChild(btn);
   }
 
   _handleDialogueAction(opt, npc) {
     switch (opt.action) {
-      case 'shop':
+      case 'open_shop':
         this.closeDialogue();
         this.openShop(opt.shopId || npc.shop, npc.id);
         break;
-      case 'heal':
-        this.gs.emit('healAtNPC', { npcId: npc.id, cost: opt.cost });
+      case 'heal_service':
+        this.gs.emit('healAtNPC', { npcId: npc.id, cost: opt.cost || 0 });
         this.closeDialogue();
         break;
-      case 'rest':
-        this.gs.emit('restAtInn', { npcId: npc.id, cost: opt.cost });
+      case 'rest_service':
+        this.gs.emit('restAtInn', { npcId: npc.id, cost: opt.cost || 0 });
         this.closeDialogue();
         break;
-      case 'quests':
+      case 'buy_drink': {
+        const p = this.gs.player;
+        if (p.gold < (opt.cost || 0)) { this.showNotification('Oro insufficiente!', 'error'); break; }
+        p.gold -= opt.cost || 0;
+        if (opt.buff?.hp) p.hp = Math.min(p.maxHp, p.hp + opt.buff.hp);
+        this.showNotification('Alla salute! 🍺', 'success');
+        break;
+      }
+      case 'open_quests':
         this.closeDialogue();
         this.togglePanel('quests');
         break;
-      case 'turnin':
-        this.closeDialogue();
-        this.gs.emit('requestTurnIn', { npcId: npc.id });
-        break;
-      case 'info':
-        document.getElementById('dialogue-text').textContent =
-          "A ovest c'è la foresta dei lupi. A nord i banditi. Più lontani dal villaggio, nemici più forti. Ci sono anche dungeon per eroi coraggiosi.";
+      case 'dialogue_line':
+        document.getElementById('dialogue-text').textContent = opt.line || '...';
         break;
       case 'close':
       default:

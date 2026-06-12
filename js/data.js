@@ -916,8 +916,14 @@ GameData.DUNGEONS = {
     id: 'bandit_den',
     name: 'Tana dei Banditi',
     minLevel: 6,
+    maxPlayers: 4,
     boss: 'dungeon_boss_1',
     bgColor: '#3e2723',
+    rewards: {
+      xp: 800,
+      gold: [200, 400],
+      items: [{ id: 'hp_potion_large', qty: 3 }]
+    },
     floors: [
       {
         floorNum: 1,
@@ -949,8 +955,14 @@ GameData.DUNGEONS = {
     id: 'orc_stronghold',
     name: 'Fortezza degli Orchi',
     minLevel: 11,
+    maxPlayers: 4,
     boss: 'dungeon_boss_2',
     bgColor: '#1b5e20',
+    rewards: {
+      xp: 2200,
+      gold: [500, 900],
+      items: [{ id: 'demon_stone_shard', qty: 3 }, { id: 'elixir_speed', qty: 1 }]
+    },
     floors: [
       {
         floorNum: 1,
@@ -1215,6 +1227,18 @@ GameData.QUESTS = {
       ]
     }
   }
+};
+
+// ---------------------------------------------------------------------------
+// DEMON STONES — monoliths that summon monsters until destroyed
+// ---------------------------------------------------------------------------
+GameData.STONE = {
+  hp: 800,
+  xp: 400,
+  gold: [80, 160],
+  r: 30,
+  spawnEvery: 8,
+  maxMinions: 4
 };
 
 // ---------------------------------------------------------------------------

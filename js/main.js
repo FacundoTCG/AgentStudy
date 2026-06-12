@@ -669,6 +669,7 @@ window.bootstrapGame = function(canvas) {
   // Initialize renderer first (needs canvas)
   gameState.renderer = new window.GameRenderer(canvas);
   gameState.ui = new window.UIManager(gameState);
+  window.addEventListener('resize', () => gameState.renderer.resize());
 
   // Check for existing save
   const save = window.SaveSystem ? null : null; // SaveSystem not constructed yet

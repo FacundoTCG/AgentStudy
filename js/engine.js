@@ -801,7 +801,9 @@ class GameRenderer {
       heal      : 0x2ecc71,
       default   : 0xffffff,
     };
-    const color = skillColors[skillId] || skillColors.default;
+    // Accept either a skill id string or a skill data object
+    const key = (skillId && typeof skillId === 'object') ? (skillId.effect || skillId.id) : skillId;
+    const color = skillColors[key] || skillColors.default;
     this.spawnParticles(x, z, color, 12, 0.8);
     if (targetX !== undefined && targetZ !== undefined) {
       this.spawnParticles(targetX, targetZ, color, 10, 0.6);
@@ -847,6 +849,64 @@ class GameRenderer {
 
   zoomCamera(delta) {
     this._camZoom = Math.max(CAM_ZOOM_MIN, Math.min(CAM_ZOOM_MAX, this._camZoom + delta * 0.015));
+  }
+
+  // ── Picking (click-to-move / click-to-attack) ────────────────────────────────
+
+  _screenToGround(clientX, clientY) {
+    const rect = this._canvas.getBoundingClientRect();
+    const ndc = new THREE.Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1
+    );
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(ndc, this._camera);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const pt = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(plane, pt)) return null;
+    return { x: pt.x + HALF_WORLD, z: pt.z + HALF_WORLD };
+  }
+
+  getGroundPosition(clientX, clientY) {
+    return this._screenToGround(clientX, clientY);
+  }
+
+  // Returns { type:'enemy'|'npc'|'drop'|'ground', ... } or null.
+  raycastClick(clientX, clientY, enemies) {
+    const g = this._screenToGround(clientX, clientY);
+    if (!g) return null;
+    const CLICK_RADIUS = 45;
+
+    // Nearest living enemy (mobs + stones, world coords use .y as Z)
+    let best = null, bd = CLICK_RADIUS;
+    for (const e of enemies || []) {
+      if (!e || e.hp <= 0) continue;
+      const d = Math.hypot(e.x - g.x, e.y - g.z);
+      if (d < bd) { bd = d; best = e; }
+    }
+    if (best) return { type: 'enemy', entity: best };
+
+    // NPCs
+    const npcs = window.GameData && window.GameData.NPCS;
+    if (npcs) {
+      for (const npc of Object.values(npcs)) {
+        if (Math.hypot(npc.x - g.x, npc.y - g.z) < CLICK_RADIUS + 15) {
+          return { type: 'npc', entityId: npc.id };
+        }
+      }
+    }
+
+    // Drops
+    for (const [id, ent] of this._entities) {
+      if (ent.data && ent.data.type === 'drop') {
+        const p = ent.mesh.position;
+        if (Math.hypot(p.x + HALF_WORLD - g.x, p.z + HALF_WORLD - g.z) < 25) {
+          return { type: 'drop', dropId: id };
+        }
+      }
+    }
+
+    return { type: 'ground', x: g.x, z: g.z };
   }
 
   // ── Selection Ring ────────────────────────────────────────────────────────────
