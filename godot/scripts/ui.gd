@@ -958,6 +958,18 @@ func _show_shop(npc_id: String) -> void:
 		row.add_child(info)
 		var price_btn := _wood_button("💰 %d" % def.get("price", 0))
 		price_btn.pressed.connect(_buy_item.bind(item_id))
+		# Equipment stat comparison tooltip
+		var slot := def.get("slot", "")
+		if slot != "" and G.equipped.has(slot):
+			var cur_def := Data.ITEMS.get(G.equipped[slot]["id"], {})
+			var cmp := ""
+			for sk in ["atk", "matk", "def", "hp", "mp", "crit", "speed"]:
+				var nv := def.get(sk, 0); var cv := cur_def.get(sk, 0)
+				if nv != cv:
+					var d := nv - cv
+					cmp += "  %s: %s%d\n" % [sk.to_upper(), ("+" if d > 0 else ""), d]
+			if cmp != "":
+				price_btn.tooltip_text = "Vs equipaggiato:\n%s" % cmp.strip_edges()
 		row.add_child(price_btn)
 		buy_col.add_child(row)
 	inner.add_child(buy_col)

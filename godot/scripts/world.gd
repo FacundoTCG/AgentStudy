@@ -27,7 +27,9 @@ var spawned_stones : Array = []
 var sun_light      : DirectionalLight3D = null
 var world_env_node : WorldEnvironment   = null
 var day_time       : float = 8.0          # in-game hour 0–24
-const DAY_DURATION := 600.0               # real seconds per full in-game day
+const DAY_DURATION   := 600.0             # real seconds per full in-game day
+var respawn_timer  : float = 0.0
+const RESPAWN_INTERVAL := 45.0
 
 
 func _ready() -> void:
@@ -59,6 +61,43 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	day_time = fmod(day_time + delta * 24.0 / DAY_DURATION, 24.0)
 	_update_daynight()
+	respawn_timer += delta
+	if respawn_timer >= RESPAWN_INTERVAL:
+		respawn_timer = 0.0
+		_respawn_zone_monsters()
+
+
+func _respawn_zone_monsters() -> void:
+	if not monster_scene:
+		return
+	var current_mobs := get_tree().get_nodes_in_group("monsters")
+	for zone in Data.ZONES:
+		var zone_c : Vector2 = zone["center"]
+		var zone_r : float   = zone["radius"]
+		var tier   : int     = zone["tier"]
+		var mob_count := clampi(int(PI * zone_r * zone_r * MOB_DENSITY), 6, 40)
+		var count := 0
+		for m in current_mobs:
+			if Vector2(m.global_position.x, m.global_position.z).distance_to(zone_c) <= zone_r:
+				count += 1
+		var need := mob_count - count
+		if need <= 0:
+			continue
+		for _i in mini(4, need):
+			var angle := randf() * TAU
+			var dist  := sqrt(randf()) * zone_r
+			var wx    := zone_c.x + cos(angle) * dist
+			var wz    := zone_c.y + sin(angle) * dist
+			var wy    := _get_height(wx, wz)
+			if wy < 0.2:
+				continue
+			var mob_id := "mob_z%d_%d" % [tier, randi() % 8]
+			if not Data.MONSTERS.has(mob_id):
+				continue
+			var node := monster_scene.instantiate()
+			add_child(node)
+			node.global_position = Vector3(wx, wy + 0.5, wz)
+			node.setup(Data.MONSTERS[mob_id])
 
 
 func _update_daynight() -> void:
@@ -383,6 +422,35 @@ func _build_village() -> void:
 		st_body.add_child(cshape)
 		st_body.position = Vector3(bx, by + bh * 0.5, bz)
 		add_child(st_body)
+
+	# Campfires with dynamic OmniLight
+	var fire_positions := [Vector2(30, -12), Vector2(-38, 18), Vector2(12, 62), Vector2(-22, -58), Vector2(60, 30)]
+	var log_mat_fire := StandardMaterial3D.new()
+	log_mat_fire.albedo_color = Color(0.26, 0.16, 0.09); log_mat_fire.roughness = 0.9
+	for fp in fire_positions:
+		var fy := _get_height(fp.x, fp.y)
+		var log_m := CylinderMesh.new()
+		log_m.top_radius = 0.38; log_m.bottom_radius = 0.48; log_m.height = 0.25
+		var log_mi := MeshInstance3D.new()
+		log_mi.mesh = log_m; log_mi.material_override = log_mat_fire
+		log_mi.position = Vector3(fp.x, fy + 0.13, fp.y)
+		add_child(log_mi)
+		var flame_m := CylinderMesh.new()
+		flame_m.top_radius = 0.0; flame_m.bottom_radius = 0.22; flame_m.height = 0.45
+		var flame_mat := StandardMaterial3D.new()
+		flame_mat.albedo_color = Color(1.0, 0.5, 0.1, 0.85)
+		flame_mat.emission_enabled = true; flame_mat.emission = Color(1.0, 0.45, 0.05) * 1.8
+		flame_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		var flame_mi := MeshInstance3D.new()
+		flame_mi.mesh = flame_m; flame_mi.material_override = flame_mat
+		flame_mi.position = Vector3(fp.x, fy + 0.5, fp.y)
+		add_child(flame_mi)
+		var fire_light := OmniLight3D.new()
+		fire_light.light_color = Color(1.0, 0.58, 0.18)
+		fire_light.light_energy = 2.2; fire_light.omni_range = 9.0
+		fire_light.shadow_enabled = false
+		fire_light.position = Vector3(fp.x, fy + 0.85, fp.y)
+		add_child(fire_light)
 
 	# Central well / landmark
 	var well_mat := StandardMaterial3D.new()
