@@ -3,199 +3,822 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pullo.io — Oripa Digitale per Carte Collezionabili</title>
-  <meta name="description" content="Apri pacchi digitali di carte collezionabili. Pokémon, One Piece, Magic, Dragon Ball.">
+  <meta name="description" content="Pullo.io — Apri pacchi di carte digitali. Pokémon, One Piece, Magic e altro. Ogni carta è tua: tienila o rivendila istantaneamente.">
+  <title>Pullo.io — Oripa Digitale</title>
   <link rel="stylesheet" href="css/pullo.css">
 </head>
 <body>
-<div id="app">
 
-  <!-- ─── Header ─── -->
-  <header>
-    <span class="logo" onclick="showView('shop')">PULLO.IO</span>
-    <nav>
-      <button class="nav-btn active" data-view="shop">🏪 Shop</button>
-      <button class="nav-btn" data-view="vault">📦 Vault</button>
-      <button class="nav-btn" data-view="feed">🔴 Live Feed</button>
+<!-- ===== HEADER ===== -->
+<header class="header">
+  <div class="header__inner">
+
+    <a href="/pullo#home" class="header__logo" data-route="home">PULLO.IO</a>
+
+    <nav class="header__nav" id="main-nav" aria-label="Navigazione principale">
+      <a href="/pullo#home"         class="header__nav-link" data-route="home">Home</a>
+      <a href="/pullo#shop"         class="header__nav-link" data-route="shop">Packs</a>
+      <a href="/pullo#shop"         class="header__nav-link" data-route="shop">Shop</a>
+      <a href="/pullo#collection"   class="header__nav-link" data-route="collection">Vault</a>
     </nav>
-    <div style="display:flex;align-items:center;gap:10px">
-      <div class="credits-badge">
-        💰 <span id="credits-display">€500</span>
-        <button onclick="addCredits()" style="background:none;border:none;color:inherit;cursor:pointer;font-size:0.8rem;opacity:0.7" title="Aggiungi crediti demo">+</button>
-      </div>
-    </div>
-  </header>
 
-  <!-- ─── Shop View ─── -->
-  <div id="view-shop" class="view active">
-    <!-- Hero -->
-    <div class="hero">
-      <h1>Oripa Digitale</h1>
-      <p>Apri pacchi misteriosi di carte collezionabili autenticate. Pokémon TCG, One Piece, Magic: The Gathering e Dragon Ball Super.</p>
-      <div class="hero-badges">
-        <span class="badge">⚡ Pokémon TCG</span>
-        <span class="badge">☠️ One Piece</span>
-        <span class="badge">✦ Magic: The Gathering</span>
-        <span class="badge">🐉 Dragon Ball Super</span>
-      </div>
+    <div class="header__actions" id="header-actions">
+      <button class="btn-ghost"   id="btn-login">Sign In</button>
+      <button class="btn-primary" id="btn-signup">Sign Up</button>
+      <span id="user-badge" style="display:none; align-items:center; gap:10px;">
+        <span id="user-name"       style="font-size:.875rem; font-weight:600;"></span>
+        <span id="credits-display" style="font-size:.875rem; color:var(--orange); font-weight:700;"></span>
+        <button class="btn-ghost"  id="btn-logout">Esci</button>
+      </span>
     </div>
 
-    <!-- Pack grid -->
-    <div class="section">
-      <div class="section-title">Pacchi disponibili</div>
-      <div class="pack-grid" id="pack-grid"></div>
-    </div>
+    <button class="header__hamburger" id="mobile-menu-toggle" aria-label="Apri menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
 
-    <!-- Trust signals -->
-    <div class="section" style="padding-top:0">
-      <div class="section-title">Perché scegliere Pullo.io</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
-        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px">
-          <div style="font-size:1.6rem;margin-bottom:8px">🎲</div>
-          <div style="font-weight:700;margin-bottom:4px">Quote trasparenti</div>
-          <div style="font-size:0.82rem;color:var(--text-dim)">Probabilità di rarità visibili su ogni pacco.</div>
-        </div>
-        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px">
-          <div style="font-size:1.6rem;margin-bottom:8px">⚡</div>
-          <div style="font-weight:700;margin-bottom:4px">Apertura istantanea</div>
-          <div style="font-size:0.82rem;color:var(--text-dim)">Risultati in tempo reale, animazioni spettacolari.</div>
-        </div>
-        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px">
-          <div style="font-size:1.6rem;margin-bottom:8px">📦</div>
-          <div style="font-weight:700;margin-bottom:4px">Il tuo Vault</div>
-          <div style="font-size:0.82rem;color:var(--text-dim)">Gestisci e tieni traccia della tua collezione.</div>
-        </div>
-        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px">
-          <div style="font-size:1.6rem;margin-bottom:8px">🔴</div>
-          <div style="font-weight:700;margin-bottom:4px">Live Feed</div>
-          <div style="font-size:0.82rem;color:var(--text-dim)">Vedi le aperture della community in tempo reale.</div>
-        </div>
-      </div>
-    </div>
   </div>
+</header>
 
-  <!-- ─── Vault View ─── -->
-  <div id="view-vault" class="view">
-    <div class="vault-header section" style="padding-bottom:0;padding-top:28px">
-      <h2 style="font-size:1.3rem;font-weight:900">Il tuo Vault</h2>
-      <div class="vault-stats">
-        <div class="vault-stat">
-          <div class="vault-stat-val" id="vault-total">0</div>
-          <div class="vault-stat-label">Carte</div>
-        </div>
-        <div class="vault-stat">
-          <div class="vault-stat-val" id="vault-value">€0</div>
-          <div class="vault-stat-label">Valore</div>
-        </div>
-        <div class="vault-stat">
-          <div class="vault-stat-val" id="vault-rares">0</div>
-          <div class="vault-stat-label">Rare+</div>
-        </div>
+
+<!-- ===== MAIN ===== -->
+<main id="main">
+
+  <!-- ======================= HOME ======================= -->
+  <div id="view-home" class="view">
+
+    <!-- Hero Slider -->
+    <div id="hero-slider" class="hero-slider" aria-label="Hero slider">
+      <div class="hero-slider__track">
+
+        <article class="hero-slide hero-slide--1">
+          <div class="hero-slide__content">
+            <span class="hero-slide__eyebrow">Pokémon TCG · One Piece · Magic</span>
+            <h1 class="hero-slide__title">DreamPullo<br><span>Il pacco definitivo</span></h1>
+            <p class="hero-slide__subtitle">20 carte, rarità garantite. L'emozione del pull nell'era digitale.</p>
+            <div class="hero-slide__cta">
+              <button class="btn-hero" data-route="shop">Apri ora</button>
+              <button class="btn-hero-outline" data-route="how-it-works">Come funziona</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="hero-slide hero-slide--2">
+          <div class="hero-slide__content">
+            <span class="hero-slide__eyebrow">Nuova categoria · Football Cards</span>
+            <h1 class="hero-slide__title">Football<br><span>Packs</span></h1>
+            <p class="hero-slide__subtitle">Carte calciatori premium. Icone, leggende e gold edition.</p>
+            <div class="hero-slide__cta">
+              <button class="btn-hero" data-route="shop">Scopri ora</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="hero-slide hero-slide--3">
+          <div class="hero-slide__content">
+            <span class="hero-slide__eyebrow">La tua carta, le tue regole</span>
+            <h1 class="hero-slide__title">Apri, tieni<br>o <span>rivendi</span></h1>
+            <p class="hero-slide__subtitle">Ogni carta che estrai è tua al 100%. Tienila o rivendila istantaneamente.</p>
+            <div class="hero-slide__cta">
+              <button class="btn-hero" data-route="shop">Scopri i pacchi</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="hero-slide hero-slide--4">
+          <div class="hero-slide__content">
+            <span class="hero-slide__badge">✦ OFFERTA BENVENUTO</span>
+            <h1 class="hero-slide__title">10% sul<br><span>primo pacco</span></h1>
+            <p class="hero-slide__subtitle">Usa il codice <strong>FIRST</strong> al checkout. Solo per i nuovi utenti registrati.</p>
+            <div class="hero-slide__cta">
+              <button class="btn-hero" id="hero-cta-register">Registrati ora</button>
+            </div>
+          </div>
+        </article>
+
+      </div>
+
+      <button class="hero-slider__arrow hero-slider__arrow--prev" id="slider-prev" aria-label="Slide precedente">&#8249;</button>
+      <button class="hero-slider__arrow hero-slider__arrow--next" id="slider-next" aria-label="Slide successivo">&#8250;</button>
+
+      <div class="hero-slider__dots" role="tablist" aria-label="Navigazione slide">
+        <button class="hero-slider__dot active" role="tab" aria-label="Slide 1" data-index="0"></button>
+        <button class="hero-slider__dot"         role="tab" aria-label="Slide 2" data-index="1"></button>
+        <button class="hero-slider__dot"         role="tab" aria-label="Slide 3" data-index="2"></button>
+        <button class="hero-slider__dot"         role="tab" aria-label="Slide 4" data-index="3"></button>
       </div>
     </div>
+    <!-- /hero-slider -->
 
-    <div class="section" style="padding-top:18px">
-      <div class="vault-filter">
-        <button class="filter-btn active" data-rarity="all" onclick="filterVault('all')">Tutto</button>
-        <button class="filter-btn" data-rarity="secret" onclick="filterVault('secret')" style="color:#e879f9">✦ Secret Rare</button>
-        <button class="filter-btn" data-rarity="ultra" onclick="filterVault('ultra')" style="color:#fbbf24">★★★ Ultra Rare</button>
-        <button class="filter-btn" data-rarity="rare" onclick="filterVault('rare')" style="color:#60a5fa">★★ Rare</button>
-        <button class="filter-btn" data-rarity="uncommon" onclick="filterVault('uncommon')" style="color:#10b981">★ Uncommon</button>
-        <button class="filter-btn" data-rarity="common" onclick="filterVault('common')">Common</button>
+    <!-- Just Pulled -->
+    <section class="just-pulled" aria-label="Just Pulled — attività in tempo reale">
+      <div class="just-pulled__header container">
+        <span class="just-pulled__label">Just Pulled</span>
+        <span class="just-pulled__live">Live</span>
       </div>
-      <div class="vault-grid" id="vault-grid">
-        <div class="vault-empty" style="grid-column:1/-1">
-          <div class="icon">📦</div>
-          <p>Apri il tuo primo pacco per iniziare la collezione!</p>
+      <div class="just-pulled__scroll" id="just-pulled-list" role="list" aria-label="Carte estratte di recente">
+        <!-- Populated by socket events -->
+      </div>
+    </section>
+
+    <!-- Featured Packs -->
+    <section class="pack-section container" aria-label="Pacchi in evidenza">
+      <div class="section-header">
+        <div>
+          <p class="section-eyebrow">I nostri pacchi</p>
+          <h2 class="section-title">Pacchi digitali</h2>
+        </div>
+        <a href="/pullo#shop" class="section-link" data-route="shop">Vedi tutti →</a>
+      </div>
+      <div class="pack-grid" id="featured-packs-grid" role="list" aria-label="Pacchi in evidenza">
+        <!-- Populated by pullo-client.js -->
+      </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="categories-section container" aria-label="Categorie">
+      <div class="section-header">
+        <div>
+          <p class="section-eyebrow">Categorie</p>
+          <h2 class="section-title">Scegli il tuo gioco</h2>
         </div>
       </div>
-    </div>
-  </div>
+      <div class="categories-grid" role="list">
 
-  <!-- ─── Feed View ─── -->
-  <div id="view-feed" class="view">
-    <div id="view-feed-inner">
-      <div class="feed-header section" style="padding-bottom:0;padding-top:28px">
-        <h2><span class="live-dot"></span>Just Pulled</h2>
-        <p>Aperture della community in tempo reale</p>
+        <div class="category-card" role="listitem" data-route="shop">
+          <span class="category-card__icon">⚡</span>
+          <span class="category-card__name">Pokémon TCG</span>
+          <span class="category-card__count">3 pacchi</span>
+        </div>
+
+        <div class="category-card" role="listitem" data-route="shop">
+          <span class="category-card__icon">☠️</span>
+          <span class="category-card__name">One Piece</span>
+          <span class="category-card__count">1 pacco</span>
+        </div>
+
+        <div class="category-card" role="listitem" data-route="shop">
+          <span class="category-card__icon">✦</span>
+          <span class="category-card__name">Magic</span>
+          <span class="category-card__count">1 pacco</span>
+        </div>
+
+        <div class="category-card" role="listitem" data-route="shop">
+          <span class="category-card__icon">🐉</span>
+          <span class="category-card__name">Dragon Ball</span>
+          <span class="category-card__count">1 pacco</span>
+        </div>
+
+        <div class="category-card" role="listitem" data-route="shop">
+          <span class="category-card__icon">⚽</span>
+          <span class="category-card__name">Football</span>
+          <span class="category-card__count">1 pacco</span>
+        </div>
+
       </div>
-      <div class="section" style="padding-top:18px">
-        <div class="feed-list" id="feed-list">
-          <div style="text-align:center;padding:40px;color:var(--text-dim);font-size:0.9rem">
-            In attesa di aperture live…
+    </section>
+
+    <!-- Trust Badges -->
+    <section class="trust-section" aria-label="Garanzie e recensioni">
+      <div class="trust-strip container">
+
+        <div class="trust-item">
+          <div class="trust-item__icon">✓</div>
+          <div class="trust-item__text">
+            <p class="trust-item__headline">CardTrader 100%</p>
+            <p class="trust-item__sub">Feedback positivi</p>
           </div>
         </div>
+
+        <div class="trust-divider" aria-hidden="true"></div>
+
+        <div class="trust-item">
+          <div class="trust-item__icon">⭐</div>
+          <div class="trust-item__text">
+            <p class="trust-item__headline">Vinted 100%</p>
+            <p class="trust-item__sub">Valutazioni positive</p>
+          </div>
+        </div>
+
+        <div class="trust-divider" aria-hidden="true"></div>
+
+        <div class="trust-item">
+          <div class="trust-item__icon">🔒</div>
+          <div class="trust-item__text">
+            <p class="trust-item__headline">Pagamenti sicuri</p>
+            <p class="trust-item__sub">SSL certificato</p>
+          </div>
+        </div>
+
+        <div class="trust-divider" aria-hidden="true"></div>
+
+        <div class="trust-item">
+          <div class="trust-item__icon">🚚</div>
+          <div class="trust-item__text">
+            <p class="trust-item__headline">Spedizione rapida</p>
+            <p class="trust-item__sub">3–5 giorni lavorativi</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+  <!-- /view-home -->
+
+
+  <!-- ======================= SHOP ======================= -->
+  <div id="view-shop" class="view" style="display:none">
+
+    <!-- Shop banner slider -->
+    <div id="shop-slider" class="hero-slider" style="height:220px" aria-label="Banner promozionali">
+      <div class="hero-slider__track">
+
+        <article class="hero-slide hero-slide--1">
+          <div class="hero-slide__content">
+            <span class="hero-slide__eyebrow">Pokémon TCG</span>
+            <h2 class="hero-slide__title" style="font-size:clamp(1.4rem,3vw,2.2rem)">Pacchi originali con rarità garantite</h2>
+          </div>
+        </article>
+
+        <article class="hero-slide hero-slide--2">
+          <div class="hero-slide__content">
+            <span class="hero-slide__eyebrow">One Piece</span>
+            <h2 class="hero-slide__title" style="font-size:clamp(1.4rem,3vw,2.2rem)">Nuove uscite disponibili ora</h2>
+          </div>
+        </article>
+
+        <article class="hero-slide hero-slide--3">
+          <div class="hero-slide__content">
+            <span class="hero-slide__eyebrow">Football Cards</span>
+            <h2 class="hero-slide__title" style="font-size:clamp(1.4rem,3vw,2.2rem)">Carte calciatori premium</h2>
+          </div>
+        </article>
+
+      </div>
+      <button class="hero-slider__arrow hero-slider__arrow--prev" id="shop-slider-prev" aria-label="Precedente">&#8249;</button>
+      <button class="hero-slider__arrow hero-slider__arrow--next" id="shop-slider-next" aria-label="Successivo">&#8250;</button>
+      <div class="hero-slider__dots" role="tablist">
+        <button class="hero-slider__dot active" data-index="0"></button>
+        <button class="hero-slider__dot"         data-index="1"></button>
+        <button class="hero-slider__dot"         data-index="2"></button>
+      </div>
+    </div>
+
+    <!-- Game filter -->
+    <div class="container" style="padding-block:28px 0">
+      <div class="vault-filters" role="toolbar" aria-label="Filtra per gioco">
+        <button class="filter-btn shop-filter-btn active" data-game="all">Tutti</button>
+        <button class="filter-btn shop-filter-btn" data-game="pokemon">Pokémon</button>
+        <button class="filter-btn shop-filter-btn" data-game="onepiece">One Piece</button>
+        <button class="filter-btn shop-filter-btn" data-game="magic">Magic</button>
+        <button class="filter-btn shop-filter-btn" data-game="dragonball">Dragon Ball</button>
+        <button class="filter-btn shop-filter-btn" data-game="football">Football</button>
+      </div>
+    </div>
+
+    <!-- All packs -->
+    <section class="pack-section container" aria-label="Tutti i pacchi">
+      <div class="section-header">
+        <div>
+          <p class="section-eyebrow">Catalogo</p>
+          <h2 class="section-title">Tutti i pacchi</h2>
+        </div>
+      </div>
+      <div class="pack-grid" id="all-packs-grid" role="list" aria-label="Tutti i pacchi"></div>
+    </section>
+
+  </div>
+  <!-- /view-shop -->
+
+
+  <!-- ======================= COLLECTION ======================= -->
+  <div id="view-collection" class="view vault-page" style="display:none">
+    <div class="container">
+
+      <div class="vault-stats">
+        <div class="vault-stat">
+          <span class="vault-stat__label">Carte totali</span>
+          <span class="vault-stat__value" id="vault-total">0</span>
+        </div>
+        <div class="vault-stat">
+          <span class="vault-stat__label">Valore collezione</span>
+          <span class="vault-stat__value vault-stat__value--green" id="vault-value">€0</span>
+        </div>
+        <div class="vault-stat">
+          <span class="vault-stat__label">Rare e superiori</span>
+          <span class="vault-stat__value vault-stat__value--gold" id="vault-rares">0</span>
+        </div>
+        <div class="vault-stat">
+          <span class="vault-stat__label">Crediti disponibili</span>
+          <span class="vault-stat__value" id="vault-credits">€0</span>
+        </div>
+      </div>
+
+      <!-- Rarity filter -->
+      <div class="vault-filters" role="toolbar" aria-label="Filtra per rarità">
+        <button class="filter-btn vault-rarity-btn active" data-rarity="all">Tutti</button>
+        <button class="filter-btn vault-rarity-btn" data-rarity="secret">Secret Rare</button>
+        <button class="filter-btn vault-rarity-btn" data-rarity="ultra">Ultra Rare</button>
+        <button class="filter-btn vault-rarity-btn" data-rarity="rare">Rare</button>
+        <button class="filter-btn vault-rarity-btn" data-rarity="uncommon">Uncommon</button>
+        <button class="filter-btn vault-rarity-btn" data-rarity="common">Common</button>
+      </div>
+
+      <!-- Game filter -->
+      <div class="vault-filters" style="margin-bottom:32px" role="toolbar" aria-label="Filtra per gioco">
+        <button class="filter-btn vault-game-btn active" data-game="all">Tutti i giochi</button>
+        <button class="filter-btn vault-game-btn" data-game="pokemon">Pokémon</button>
+        <button class="filter-btn vault-game-btn" data-game="onepiece">One Piece</button>
+        <button class="filter-btn vault-game-btn" data-game="magic">Magic</button>
+        <button class="filter-btn vault-game-btn" data-game="dragonball">Dragon Ball</button>
+        <button class="filter-btn vault-game-btn" data-game="football">Football</button>
+        <button class="filter-btn" id="btn-add-credits" style="margin-left:auto;color:var(--orange);border-color:rgba(249,115,22,.3)">+ €250 crediti</button>
+      </div>
+
+      <!-- Card grid -->
+      <div class="vault-grid" id="collection-grid" role="list" aria-label="Carte in collezione"></div>
+
+    </div>
+  </div>
+  <!-- /view-collection -->
+
+
+  <!-- ======================= HOW IT WORKS ======================= -->
+  <div id="view-how-it-works" class="view" style="display:none">
+    <div class="info-page">
+      <p class="info-page__eyebrow">Guida</p>
+      <h1 class="info-page__title">Come funziona</h1>
+      <p class="info-page__lead">Aprire un pacco su Pullo.io è semplice, sicuro e adrenalinico. Tre passi per iniziare:</p>
+
+      <ol class="steps-list">
+        <li class="step">
+          <div class="step__num">1</div>
+          <div class="step__content">
+            <h2 class="step__title">Scegli il pacco</h2>
+            <p class="step__desc">Sfoglia il catalogo e scegli il pacco che fa per te: Pokémon, One Piece, Magic, Dragon Ball o Football. Ogni pacco mostra quante carte contiene e le probabilità di estrazione.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step__num">2</div>
+          <div class="step__content">
+            <h2 class="step__title">Apri e rivela</h2>
+            <p class="step__desc">Completa l'acquisto e goditi l'apertura in tempo reale. Le carte vengono rivelate una per una con effetti speciali per le rarità più alte.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step__num">3</div>
+          <div class="step__content">
+            <h2 class="step__title">Tieni o rivendi</h2>
+            <p class="step__desc">Ogni carta estratta è tua al 100%. Aggiungila al Vault o rivendila istantaneamente. Il valore è sempre nelle tue mani.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="info-section" style="margin-top:48px">
+        <h2 class="info-section__title">Carta fisica o digitale?</h2>
+        <p class="info-section__body">Le carte sono fisiche al 100%. Dopo l'apertura del pacco digitale, le carte vengono spedite al tuo indirizzo entro 5–7 giorni lavorativi, imbustate singolarmente e protette da sleeve e top-loader.</p>
       </div>
     </div>
   </div>
 
-</div><!-- #app -->
 
-<!-- ─── Pack Detail Modal ─── -->
-<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <!-- ======================= ODDS ======================= -->
+  <div id="view-odds" class="view" style="display:none">
+    <div class="info-page">
+      <p class="info-page__eyebrow">Trasparenza totale</p>
+      <h1 class="info-page__title">Quote di estrazione</h1>
+      <p class="info-page__lead">Il nostro sistema RNG è verificato. Ogni estrazione è indipendente dalle precedenti. Ecco le probabilità per ogni pacco:</p>
+
+      <div style="overflow-x:auto">
+        <table class="odds-table">
+          <caption>Probabilità per pacco e rarità</caption>
+          <thead>
+            <tr>
+              <th scope="col">Pacco</th>
+              <th scope="col">Prezzo</th>
+              <th scope="col">Carte</th>
+              <th scope="col">Common</th>
+              <th scope="col">Uncommon</th>
+              <th scope="col">Rare</th>
+              <th scope="col">Ultra</th>
+              <th scope="col">Secret</th>
+            </tr>
+          </thead>
+          <tbody id="odds-table-body">
+            <!-- Populated by pullo-client.js -->
+          </tbody>
+        </table>
+      </div>
+
+      <p class="info-section__body" style="margin-top:24px; font-size:.8rem; color:var(--text-mute)">Le quote sono calcolate su base statistica. Ogni apertura è un evento indipendente.</p>
+    </div>
+  </div>
+
+
+  <!-- ======================= CONDITIONS ======================= -->
+  <div id="view-conditions" class="view" style="display:none">
+    <div class="info-page">
+      <p class="info-page__eyebrow">Standard internazionale</p>
+      <h1 class="info-page__title">Condizioni delle carte</h1>
+      <p class="info-page__lead">Le carte sono classificate secondo la scala di grading internazionale. Ecco cosa aspettarti da ogni grado.</p>
+
+      <ol class="steps-list">
+        <li class="step">
+          <div class="step__num" style="width:auto;padding:0 12px;font-size:.75rem">M</div>
+          <div class="step__content">
+            <h2 class="step__title">Mint (M) — Perfetta</h2>
+            <p class="step__desc">Nessun segno di usura. Angoli perfetti, superficie senza graffi né macchie. Ideale per la conservazione e la rivendita al massimo valore.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step__num" style="width:auto;padding:0 10px;font-size:.7rem">NM</div>
+          <div class="step__content">
+            <h2 class="step__title">Near Mint (NM) — Quasi perfetta</h2>
+            <p class="step__desc">Piccoli segni di manipolazione visibili solo da vicino. Valore di mercato molto vicino al Mint.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step__num" style="width:auto;padding:0 10px;font-size:.7rem">EX</div>
+          <div class="step__content">
+            <h2 class="step__title">Excellent (EX) — Eccellente</h2>
+            <p class="step__desc">Segni di uso leggero visibili. Piccoli graffi sulla superficie. Adatta per giocare e per la collezione.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step__num" style="width:auto;padding:0 10px;font-size:.7rem">GD</div>
+          <div class="step__content">
+            <h2 class="step__title">Good (GD) — Buona</h2>
+            <p class="step__desc">Usura evidente. Angoli consumati, possibili pieghe leggere. Perfettamente giocabile.</p>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step__num" style="width:auto;padding:0 10px;font-size:.7rem">PO</div>
+          <div class="step__content">
+            <h2 class="step__title">Poor (PO) — Deteriorata</h2>
+            <p class="step__desc">Carte pesantemente usurate, possibili strappi o pieghe marcate. Consigliata solo per completare mazzi da gioco.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+
+
+  <!-- ======================= FAQ ======================= -->
+  <div id="view-faq" class="view" style="display:none">
+    <div class="info-page">
+      <p class="info-page__eyebrow">Supporto</p>
+      <h1 class="info-page__title">Domande frequenti</h1>
+
+      <div class="faq-list" id="faq-list">
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Le carte sono fisiche o digitali?
+            <span class="faq-question-icon" aria-hidden="true">+</span>
+          </button>
+          <div class="faq-answer">Le carte sono fisiche al 100%. Dopo l'apertura del pacco digitale, le carte vengono spedite al tuo indirizzo entro 5–7 giorni lavorativi, imbustate singolarmente e protette da sleeve e top-loader.</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Come vengono estratte le carte?
+            <span class="faq-question-icon" aria-hidden="true">+</span>
+          </button>
+          <div class="faq-answer">Il nostro sistema utilizza un generatore di numeri casuali certificato (RNG) che rispetta rigorosamente le quote pubblicate nella sezione Quote. Ogni estrazione è indipendente e verificabile.</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Posso rivendere le carte che ho estratto?
+            <span class="faq-question-icon" aria-hidden="true">+</span>
+          </button>
+          <div class="faq-answer">Sì. Direttamente dalla pagina Vault puoi mettere in vendita qualsiasi carta. La transazione avviene sulla piattaforma e ricevi il pagamento in crediti.</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Come funziona il codice promozionale FIRST?
+            <span class="faq-question-icon" aria-hidden="true">+</span>
+          </button>
+          <div class="faq-answer">Inserisci il codice nel campo "Codice promozionale" nel dettaglio del pacco prima di procedere all'acquisto. Il codice FIRST offre il 10% di sconto sul primo acquisto per i nuovi utenti registrati.</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Quali metodi di pagamento accettate?
+            <span class="faq-question-icon" aria-hidden="true">+</span>
+          </button>
+          <div class="faq-answer">Accettiamo carte di credito e debito (Visa, Mastercard, American Express), PayPal e bonifico bancario. Tutti i pagamenti sono protetti da crittografia SSL.</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Quanto tempo ci vuole per ricevere le carte?
+            <span class="faq-question-icon" aria-hidden="true">+</span>
+          </button>
+          <div class="faq-answer">Le spedizioni partono entro 24 ore dall'apertura del pacco. I tempi di consegna sono 3–5 giorni lavorativi per l'Italia, 7–14 giorni per l'Europa. Per ordini superiori a €50 la spedizione è gratuita.</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Le carte sono garantite come autentiche?
+            <span class="faq-question-icon" aria-hidden="true">+</span>
+          </button>
+          <div class="faq-answer">Sì. Lavoriamo esclusivamente con distributori ufficiali e ogni lotto di carte viene verificato prima dell'inserimento nel catalogo. Il nostro feedback 100% positivo su CardTrader e Vinted ne è la prova.</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false">
+            Posso aprire più pacchi in una sessione?
+            <span class="faq-question-icon" aria-hidden="true">+</span>
+          </button>
+          <div class="faq-answer">Assolutamente sì. Puoi acquistare e aprire quanti pacchi vuoi. Ogni pacco viene aperto individualmente per massimizzare l'esperienza di rivelazione.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ======================= ABOUT ======================= -->
+  <div id="view-about" class="view" style="display:none">
+    <div class="info-page">
+      <p class="info-page__eyebrow">Chi siamo</p>
+      <h1 class="info-page__title">About Pullo.io</h1>
+      <p class="info-page__lead">Pullo.io è nata dalla passione per le carte collezionabili e dalla volontà di rendere l'apertura dei pacchi accessibile, trasparente e adrenalinica per tutti.</p>
+
+      <div class="info-section">
+        <p class="info-section__body">Siamo un team di appassionati collezionisti e sviluppatori con sede in Italia. Abbiamo aperto migliaia di pacchi noi stessi prima di costruire la piattaforma che avremmo voluto avere: semplice, onesta e divertente.</p>
+      </div>
+
+      <div class="info-section">
+        <h2 class="info-section__title">I nostri valori</h2>
+        <ol class="steps-list" style="margin-top:16px">
+          <li class="step">
+            <div class="step__num" style="width:auto;padding:0 8px;font-size:.6rem">🔍</div>
+            <div class="step__content">
+              <h3 class="step__title">Trasparenza</h3>
+              <p class="step__desc">Le nostre quote sono pubbliche e verificabili. Nessun trucco, nessuna sorpresa.</p>
+            </div>
+          </li>
+          <li class="step">
+            <div class="step__num" style="width:auto;padding:0 8px;font-size:.6rem">✓</div>
+            <div class="step__content">
+              <h3 class="step__title">Autenticità</h3>
+              <p class="step__desc">Ogni carta proviene da canali ufficiali certificati. Garanzia totale.</p>
+            </div>
+          </li>
+          <li class="step">
+            <div class="step__num" style="width:auto;padding:0 8px;font-size:.6rem">🌐</div>
+            <div class="step__content">
+              <h3 class="step__title">Comunità</h3>
+              <p class="step__desc">Uno spazio dove i collezionisti condividono la loro passione.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ======================= CONTACT ======================= -->
+  <div id="view-contact" class="view" style="display:none">
+    <div class="info-page">
+      <p class="info-page__eyebrow">Assistenza</p>
+      <h1 class="info-page__title">Contattaci</h1>
+      <p class="info-page__lead">Hai domande o bisogno di assistenza? Scrivici e ti risponderemo entro 24 ore lavorative.</p>
+
+      <form id="contact-form" novalidate>
+
+        <div class="form-group">
+          <label class="form-label" for="contact-name">Nome e cognome</label>
+          <input class="form-input" type="text" id="contact-name" name="name" autocomplete="name" required placeholder="Mario Rossi">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="contact-email">Email</label>
+          <input class="form-input" type="email" id="contact-email" name="email" autocomplete="email" required placeholder="mario@esempio.it">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="contact-subject">Oggetto</label>
+          <select class="form-input" id="contact-subject" name="subject" required>
+            <option value="" disabled selected>Seleziona un argomento</option>
+            <option value="order">Ordine e spedizione</option>
+            <option value="payment">Pagamento</option>
+            <option value="card">Carta estratta</option>
+            <option value="resell">Rivendita</option>
+            <option value="account">Account</option>
+            <option value="other">Altro</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="contact-message">Messaggio</label>
+          <textarea class="form-input" id="contact-message" name="message" rows="5" required placeholder="Descrivi il tuo problema..."></textarea>
+        </div>
+
+        <button type="submit" class="form-submit">Invia messaggio</button>
+
+      </form>
+    </div>
+  </div>
+
+</main>
+<!-- /main -->
+
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="container">
+
+    <div class="footer__top">
+
+      <div class="footer__brand">
+        <span class="footer__logo">PULLO.IO</span>
+        <p class="footer__tagline">La piattaforma italiana per le oripa digitali. Apri, tieni o rivendi le tue carte.</p>
+        <div class="footer__social">
+          <a href="#" class="footer__social-link" aria-label="Instagram" rel="noopener noreferrer" title="Instagram">📷</a>
+          <a href="#" class="footer__social-link" aria-label="TikTok"    rel="noopener noreferrer" title="TikTok">🎵</a>
+          <a href="#" class="footer__social-link" aria-label="Facebook"  rel="noopener noreferrer" title="Facebook">📘</a>
+        </div>
+      </div>
+
+      <div>
+        <p class="footer__col-title">Experience</p>
+        <div class="footer__links">
+          <a href="/pullo#shop"       class="footer__link" data-route="shop">Digital Packs</a>
+          <a href="/pullo#conditions" class="footer__link" data-route="conditions">Condizioni carte</a>
+          <a href="/pullo#odds"       class="footer__link" data-route="odds">Quote</a>
+          <a href="/pullo#collection" class="footer__link" data-route="collection">The Vault</a>
+        </div>
+      </div>
+
+      <div>
+        <p class="footer__col-title">Company</p>
+        <div class="footer__links">
+          <a href="/pullo#how-it-works" class="footer__link" data-route="how-it-works">Come funziona</a>
+          <a href="/pullo#faq"          class="footer__link" data-route="faq">FAQ</a>
+          <a href="/pullo#about"        class="footer__link" data-route="about">Chi siamo</a>
+          <a href="/pullo#contact"      class="footer__link" data-route="contact">Contatti</a>
+        </div>
+      </div>
+
+      <div>
+        <p class="footer__col-title">Legal</p>
+        <div class="footer__links">
+          <a href="#" class="footer__link">Privacy Policy</a>
+          <a href="#" class="footer__link">Cookie Policy</a>
+          <a href="#" class="footer__link">Termini di servizio</a>
+          <a href="#" class="footer__link">Spedizioni</a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer__bottom">
+      <p class="footer__copyright">&copy; Pullo SRL &mdash; P.IVA 14291150960 &mdash; Tutti i diritti riservati</p>
+      <div class="footer__legal-links">
+        <a href="#" class="footer__legal-link">Privacy</a>
+        <a href="#" class="footer__legal-link">Cookie</a>
+        <a href="#" class="footer__legal-link">Termini</a>
+      </div>
+    </div>
+
+  </div>
+</footer>
+
+
+<!-- ===== MODAL: SIGN IN ===== -->
+<div id="modal-login" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-login-title">
   <div class="modal">
-    <h3 id="modal-pack-name">GreatPullo</h3>
-    <p id="modal-pack-game">Pokémon TCG</p>
-    <div class="modal-art" id="modal-pack-icon">📦</div>
-    <div class="modal-details">
-      <div class="modal-detail">
-        <div class="modal-detail-label">Prezzo</div>
-        <div class="modal-detail-val" id="modal-pack-price">€25</div>
+    <button class="modal__close" id="modal-login-close" aria-label="Chiudi">&times;</button>
+    <p class="modal__logo">PULLO.IO</p>
+    <h2 class="modal__title" id="modal-login-title">Bentornato</h2>
+    <p class="modal__subtitle">Accedi al tuo account</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active">Accedi</button>
+      <button class="auth-tab" id="switch-to-register">Registrati</button>
+    </div>
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="login-username">Username</label>
+        <input class="form-input" type="text" id="login-username" name="username" autocomplete="username" required placeholder="il_tuo_nickname">
       </div>
-      <div class="modal-detail">
-        <div class="modal-detail-label">Carte nel pacco</div>
-        <div class="modal-detail-val" id="modal-pack-cards">5</div>
+      <div class="form-group">
+        <label class="form-label" for="login-password">Password</label>
+        <input class="form-input" type="password" id="login-password" name="password" autocomplete="current-password" required placeholder="••••••••">
       </div>
-    </div>
-    <div class="modal-odds">
-      <div class="modal-odds-title">Quote rarità</div>
-      <div id="modal-odds-body"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">Chiudi</button>
-      <button class="btn btn-open-pack" id="btn-open-pack" onclick="openPack()">Apri pacco</button>
-    </div>
+      <button type="submit" class="form-submit">Accedi</button>
+    </form>
+    <p class="form-note">Non hai un account? <a href="#" id="link-to-register">Registrati ora</a></p>
   </div>
 </div>
 
-<!-- ─── Opening Overlay ─── -->
-<div id="opening-overlay">
-  <div class="opening-header">
-    <h2 id="opening-title">Apertura…</h2>
-    <button class="btn-close-opening" id="btn-close-opening" title="Chiudi">✕</button>
-  </div>
 
-  <div class="opening-stage" id="pack-burst">
-    <div class="burst-pack" id="burst-pack">
-      <span id="burst-emoji">📦</span>
+<!-- ===== MODAL: SIGN UP ===== -->
+<div id="modal-register" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-register-title">
+  <div class="modal">
+    <button class="modal__close" id="modal-register-close" aria-label="Chiudi">&times;</button>
+    <p class="modal__logo">PULLO.IO</p>
+    <h2 class="modal__title" id="modal-register-title">Crea account</h2>
+    <p class="modal__subtitle">Usa <strong style="color:var(--orange)">FIRST</strong> al checkout per il 10% sul primo pacco!</p>
+    <div class="auth-tabs">
+      <button class="auth-tab" id="switch-to-login">Accedi</button>
+      <button class="auth-tab active">Registrati</button>
     </div>
-    <div class="burst-label">Apertura in corso…</div>
-  </div>
-
-  <div id="cards-stage">
-    <div class="cards-progress" id="cards-progress"></div>
-    <div class="cards-row" id="cards-row"></div>
-    <div class="cards-actions" id="cards-actions" style="display:none">
-      <button class="btn btn-primary" onclick="showView('vault');closeOpening()">📦 Vai al Vault</button>
-      <button class="btn btn-ghost" onclick="closeOpening();showView('shop')">🏪 Torna allo shop</button>
-    </div>
+    <form id="register-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="reg-username">Username</label>
+        <input class="form-input" type="text" id="reg-username" name="username" autocomplete="username" required placeholder="il_tuo_nickname">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reg-email">Email</label>
+        <input class="form-input" type="email" id="reg-email" name="email" autocomplete="email" placeholder="mario@esempio.it">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reg-password">Password</label>
+        <input class="form-input" type="password" id="reg-password" name="password" autocomplete="new-password" required placeholder="Min. 8 caratteri">
+      </div>
+      <button type="submit" class="form-submit">Crea account</button>
+    </form>
+    <p class="form-note">Hai già un account? <a href="#" id="link-to-login">Accedi</a></p>
   </div>
 </div>
 
-<!-- ─── Toast Container ─── -->
-<div id="toast-container"></div>
 
-<!-- Socket.io -->
+<!-- ===== MODAL: PACK DETAIL ===== -->
+<div id="modal-pack-detail" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pd-title">
+  <div class="modal modal--wide">
+    <button class="modal__close" id="modal-pack-close" aria-label="Chiudi">&times;</button>
+
+    <div class="pack-detail__artwork">
+      <div class="pack-artwork" id="pd-artwork"></div>
+      <div class="pack-detail__artwork-inner">
+        <p class="pack-detail__artwork-price" id="pd-price-display">€0</p>
+      </div>
+    </div>
+
+    <div class="pack-detail__info">
+      <h2 class="pack-detail__name" id="pd-title"></h2>
+      <p class="pack-detail__desc" id="pd-desc"></p>
+
+      <table class="odds-table" aria-label="Quote di estrazione">
+        <caption>Quote di estrazione</caption>
+        <thead>
+          <tr><th scope="col">Rarità</th><th scope="col">Probabilità</th></tr>
+        </thead>
+        <tbody id="pd-odds-body"></tbody>
+      </table>
+
+      <div>
+        <label class="form-label" for="pd-promo-input">Codice promozionale</label>
+        <div class="promo-row">
+          <input class="form-input" type="text" id="pd-promo-input" placeholder="es. FIRST" autocomplete="off">
+          <button class="promo-apply" id="btn-apply-promo">Applica</button>
+        </div>
+        <p id="pd-promo-msg" style="font-size:.8rem; margin-top:6px; min-height:1.2em" aria-live="polite"></p>
+      </div>
+
+      <button class="pack-detail__buy" id="pd-buy-btn">Acquista</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== OPENING OVERLAY ===== -->
+<div id="opening-overlay" class="opening-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="opening-pack-name">
+  <div class="opening-overlay__pack" id="burst-pack-wrapper">
+    <div class="opening-overlay__pack-art" id="burst-pack-art"></div>
+    <span id="burst-pack-icon" style="position:relative;z-index:2;font-size:4rem;pointer-events:none;"></span>
+  </div>
+  <p class="opening-overlay__title" id="opening-pack-name"></p>
+  <p class="opening-overlay__hint">Sta generando le carte...</p>
+</div>
+
+
+<!-- ===== REVEAL OVERLAY ===== -->
+<div id="reveal-overlay" class="reveal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="reveal-header">
+    <span class="reveal-header__title" id="reveal-pack-name"></span>
+    <div class="reveal-header__actions">
+      <button class="btn-ghost" id="btn-reveal-all">Rivela tutte</button>
+      <button class="btn-ghost" id="btn-keep-all">Tieni tutte</button>
+      <button class="btn-primary" id="btn-finish-opening">Vai al Vault</button>
+    </div>
+  </div>
+  <div class="reveal-grid" id="reveal-grid" role="list" aria-label="Carte estratte"></div>
+</div>
+
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+
+<!-- ===== SCRIPTS ===== -->
 <script src="/socket.io/socket.io.js"></script>
-<!-- Game client -->
 <script src="js/pullo-client.js"></script>
 
-<script>
-// Burst click handler (exposed globally so onclick works)
-function triggerBurst() {
-  // No-op: burst is triggered by packResult from server
-  // This just gives user feedback while loading
-}
-</script>
 </body>
 </html>

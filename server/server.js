@@ -386,7 +386,7 @@ setInterval(() => {
 // ============================================================
 try {
   const { setupPulloGame } = require('./pullo-game');
-  setupPulloGame(io);
+  setupPulloGame(io, app);
 } catch (e) {
   console.warn('[Pullo] Could not load pullo-game:', e.message);
 }
