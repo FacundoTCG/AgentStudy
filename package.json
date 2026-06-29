@@ -1,0 +1,13 @@
+{
+  "name": "pullo-standalone",
+  "version": "1.0.0",
+  "description": "Standalone Pullo.io preview server (no native modules required)",
+  "main": "pullo-server.js",
+  "scripts": {
+    "start": "node pullo-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  }
+}
