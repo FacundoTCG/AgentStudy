@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pullo.io — Oripa Digitale per Carte Collezionabili</title>
+  <meta name="description" content="Apri pacchi digitali di carte collezionabili. Pokémon, One Piece, Magic, Dragon Ball.">
+  <link rel="stylesheet" href="css/pullo.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ─── Header ─── -->
+  <header>
+    <span class="logo" onclick="showView('shop')">PULLO.IO</span>
+    <nav>
+      <button class="nav-btn active" data-view="shop">🏪 Shop</button>
+      <button class="nav-btn" data-view="vault">📦 Vault</button>
+      <button class="nav-btn" data-view="feed">🔴 Live Feed</button>
+    </nav>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="credits-badge">
+        💰 <span id="credits-display">€500</span>
+        <button onclick="addCredits()" style="background:none;border:none;color:inherit;cursor:pointer;font-size:0.8rem;opacity:0.7" title="Aggiungi crediti demo">+</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── Shop View ─── -->
+  <div id="view-shop" class="view active">
+    <!-- Hero -->
+    <div class="hero">
+      <h1>Oripa Digitale</h1>
+      <p>Apri pacchi misteriosi di carte collezionabili autenticate. Pokémon TCG, One Piece, Magic: The Gathering e Dragon Ball Super.</p>
+      <div class="hero-badges">
+        <span class="badge">⚡ Pokémon TCG</span>
+        <span class="badge">☠️ One Piece</span>
+        <span class="badge">✦ Magic: The Gathering</span>
+        <span class="badge">🐉 Dragon Ball Super</span>
+      </div>
+    </div>
+
+    <!-- Pack grid -->
+    <div class="section">
+      <div class="section-title">Pacchi disponibili</div>
+      <div class="pack-grid" id="pack-grid"></div>
+    </div>
+
+    <!-- Trust signals -->
+    <div class="section" style="padding-top:0">
+      <div class="section-title">Perché scegliere Pullo.io</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px">
+          <div style="font-size:1.6rem;margin-bottom:8px">🎲</div>
+          <div style="font-weight:700;margin-bottom:4px">Quote trasparenti</div>
+          <div style="font-size:0.82rem;color:var(--text-dim)">Probabilità di rarità visibili su ogni pacco.</div>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px">
+          <div style="font-size:1.6rem;margin-bottom:8px">⚡</div>
+          <div style="font-weight:700;margin-bottom:4px">Apertura istantanea</div>
+          <div style="font-size:0.82rem;color:var(--text-dim)">Risultati in tempo reale, animazioni spettacolari.</div>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px">
+          <div style="font-size:1.6rem;margin-bottom:8px">📦</div>
+          <div style="font-weight:700;margin-bottom:4px">Il tuo Vault</div>
+          <div style="font-size:0.82rem;color:var(--text-dim)">Gestisci e tieni traccia della tua collezione.</div>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px">
+          <div style="font-size:1.6rem;margin-bottom:8px">🔴</div>
+          <div style="font-weight:700;margin-bottom:4px">Live Feed</div>
+          <div style="font-size:0.82rem;color:var(--text-dim)">Vedi le aperture della community in tempo reale.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Vault View ─── -->
+  <div id="view-vault" class="view">
+    <div class="vault-header section" style="padding-bottom:0;padding-top:28px">
+      <h2 style="font-size:1.3rem;font-weight:900">Il tuo Vault</h2>
+      <div class="vault-stats">
+        <div class="vault-stat">
+          <div class="vault-stat-val" id="vault-total">0</div>
+          <div class="vault-stat-label">Carte</div>
+        </div>
+        <div class="vault-stat">
+          <div class="vault-stat-val" id="vault-value">€0</div>
+          <div class="vault-stat-label">Valore</div>
+        </div>
+        <div class="vault-stat">
+          <div class="vault-stat-val" id="vault-rares">0</div>
+          <div class="vault-stat-label">Rare+</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="padding-top:18px">
+      <div class="vault-filter">
+        <button class="filter-btn active" data-rarity="all" onclick="filterVault('all')">Tutto</button>
+        <button class="filter-btn" data-rarity="secret" onclick="filterVault('secret')" style="color:#e879f9">✦ Secret Rare</button>
+        <button class="filter-btn" data-rarity="ultra" onclick="filterVault('ultra')" style="color:#fbbf24">★★★ Ultra Rare</button>
+        <button class="filter-btn" data-rarity="rare" onclick="filterVault('rare')" style="color:#60a5fa">★★ Rare</button>
+        <button class="filter-btn" data-rarity="uncommon" onclick="filterVault('uncommon')" style="color:#10b981">★ Uncommon</button>
+        <button class="filter-btn" data-rarity="common" onclick="filterVault('common')">Common</button>
+      </div>
+      <div class="vault-grid" id="vault-grid">
+        <div class="vault-empty" style="grid-column:1/-1">
+          <div class="icon">📦</div>
+          <p>Apri il tuo primo pacco per iniziare la collezione!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Feed View ─── -->
+  <div id="view-feed" class="view">
+    <div id="view-feed-inner">
+      <div class="feed-header section" style="padding-bottom:0;padding-top:28px">
+        <h2><span class="live-dot"></span>Just Pulled</h2>
+        <p>Aperture della community in tempo reale</p>
+      </div>
+      <div class="section" style="padding-top:18px">
+        <div class="feed-list" id="feed-list">
+          <div style="text-align:center;padding:40px;color:var(--text-dim);font-size:0.9rem">
+            In attesa di aperture live…
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<!-- ─── Pack Detail Modal ─── -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3 id="modal-pack-name">GreatPullo</h3>
+    <p id="modal-pack-game">Pokémon TCG</p>
+    <div class="modal-art" id="modal-pack-icon">📦</div>
+    <div class="modal-details">
+      <div class="modal-detail">
+        <div class="modal-detail-label">Prezzo</div>
+        <div class="modal-detail-val" id="modal-pack-price">€25</div>
+      </div>
+      <div class="modal-detail">
+        <div class="modal-detail-label">Carte nel pacco</div>
+        <div class="modal-detail-val" id="modal-pack-cards">5</div>
+      </div>
+    </div>
+    <div class="modal-odds">
+      <div class="modal-odds-title">Quote rarità</div>
+      <div id="modal-odds-body"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Chiudi</button>
+      <button class="btn btn-open-pack" id="btn-open-pack" onclick="openPack()">Apri pacco</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Opening Overlay ─── -->
+<div id="opening-overlay">
+  <div class="opening-header">
+    <h2 id="opening-title">Apertura…</h2>
+    <button class="btn-close-opening" id="btn-close-opening" title="Chiudi">✕</button>
+  </div>
+
+  <div class="opening-stage" id="pack-burst">
+    <div class="burst-pack" id="burst-pack">
+      <span id="burst-emoji">📦</span>
+    </div>
+    <div class="burst-label">Apertura in corso…</div>
+  </div>
+
+  <div id="cards-stage">
+    <div class="cards-progress" id="cards-progress"></div>
+    <div class="cards-row" id="cards-row"></div>
+    <div class="cards-actions" id="cards-actions" style="display:none">
+      <button class="btn btn-primary" onclick="showView('vault');closeOpening()">📦 Vai al Vault</button>
+      <button class="btn btn-ghost" onclick="closeOpening();showView('shop')">🏪 Torna allo shop</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Toast Container ─── -->
+<div id="toast-container"></div>
+
+<!-- Socket.io -->
+<script src="/socket.io/socket.io.js"></script>
+<!-- Game client -->
+<script src="js/pullo-client.js"></script>
+
+<script>
+// Burst click handler (exposed globally so onclick works)
+function triggerBurst() {
+  // No-op: burst is triggered by packResult from server
+  // This just gives user feedback while loading
+}
+</script>
+</body>
+</html>

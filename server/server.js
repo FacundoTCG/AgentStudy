@@ -382,14 +382,28 @@ setInterval(() => {
 }, 2000);
 
 // ============================================================
+// Pullo.io — attach game to shared Socket.io instance
+// ============================================================
+try {
+  const { setupPulloGame } = require('./pullo-game');
+  setupPulloGame(io);
+} catch (e) {
+  console.warn('[Pullo] Could not load pullo-game:', e.message);
+}
+
+// Route: serve pullo game page
+app.get('/pullo', (_, res) => res.sendFile(path.join(__dirname, '../pullo.html')));
+
+// ============================================================
 // Start server
 // ============================================================
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`\n╔════════════════════════════════════╗`);
-  console.log(`║  Regni d'Oriente — Server avviato  ║`);
-  console.log(`║  http://localhost:${PORT}               ║`);
-  console.log(`╚════════════════════════════════════╝\n`);
+  console.log(`\n╔════════════════════════════════════════════╗`);
+  console.log(`║  Regni d'Oriente + Pullo.io — Server on   ║`);
+  console.log(`║  http://localhost:${PORT}                       ║`);
+  console.log(`║  Pullo.io  →  http://localhost:${PORT}/pullo   ║`);
+  console.log(`╚════════════════════════════════════════════╝\n`);
 });
 
 module.exports = { app, server };
